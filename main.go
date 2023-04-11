@@ -17,5 +17,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Print(file)
+	fmt.Println(file)
 }
