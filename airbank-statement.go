@@ -49,38 +49,37 @@ func parseAirBankStatement(path string) (StatementOfAccount, error) {
 		rows, _ := p.GetTextByRow()
 		for _, row := range rows {
 			for i, word := range row.Content {
-				if strings.TrimSpace(word.S) == "Číslo účtu:" {
+				wordStr := strings.TrimSpace(word.S)
+				switch wordStr {
+				case "Číslo účtu:":
 					account.AccountNumber = row.Content[i+2].S
-				}
-				if strings.TrimSpace(word.S) == "Období výpisu:" {
+
+				case "Období výpisu:":
 					dateStr := row.Content[i+2].S
 					dateParts := strings.Split(dateStr, " - ")
-
-					startDate, err := time.Parse(layout, dateParts[0])
-					if err != nil {
+					if startDate, err := time.Parse(layout, dateParts[0]); err != nil {
 						fmt.Println("Error parsing start date:", err)
+					} else {
+						account.StartDate = startDate
 					}
 
-					endDate, err := time.Parse(layout, dateParts[1])
-					if err != nil {
+					if endDate, err := time.Parse(layout, dateParts[1]); err != nil {
 						fmt.Println("Error parsing end date:", err)
+					} else {
+						account.EndDate = endDate
 					}
-					account.StartDate = startDate
-					account.EndDate = endDate
-				}
 
-				if strings.TrimSpace(word.S) == "Zaúčtování" {
-					offsetStart := 20
-					offsetEnd := 60
+				case "Zaúčtování":
+					start, end := 20, 60
 					for j := 0; j < 30; j++ {
-						transactionRow := pdf.Row{Position: 0, Content: row.Content[i+offsetStart : i+offsetEnd]}
-						transaction, offset, err := createTransaction(transactionRow)
-						if err != nil {
+						transactionRow := pdf.Row{Position: 0, Content: row.Content[i+start : i+end]}
+						if transaction, offset, err := createTransaction(transactionRow); err != nil {
 							break
+						} else {
+							account.Transactions = append(account.Transactions, transaction)
+							start += offset
+							end += offset
 						}
-						offsetStart += offset
-						offsetEnd += offset
-						account.Transactions = append(account.Transactions, transaction)
 					}
 				}
 			}
@@ -89,96 +88,88 @@ func parseAirBankStatement(path string) (StatementOfAccount, error) {
 	return account, nil
 }
 
+/* From row of statement and creates transaction with all data */
 func createTransaction(row pdf.Row) (Transaction, int, error) {
-	layout := "02.01.2006" // the layout string to parse the date, which follows the pattern "day.month.year"
 	offset := 0
-	AccountingDate, err := time.Parse(layout, strings.TrimSpace(row.Content[0].S))
+	const numFields = 6
+	layout := "02.01.2006"
+
+	parseDate := func(date string) (time.Time, error) {
+		return time.Parse(layout, strings.TrimSpace(date))
+	}
+
+	parseFloat := func(value string) (float64, error) {
+		value = strings.ReplaceAll(value, " ", "")
+		value = strings.ReplaceAll(value, ",", ".")
+		return strconv.ParseFloat(value, 64)
+	}
+
+	/* Automatically adds offset */
+	parseField := func(index int) string {
+		return strings.TrimSpace(row.Content[index+offset].S)
+	}
+
+	var err error
+	temp := Transaction{}
+	temp.AccountingDate, err = parseDate(parseField(0))
 	if err != nil {
-		fmt.Println("Error parsing date:", err)
 		return Transaction{}, 0, err
 	}
-	ExecutionDate, err := time.Parse(layout, strings.TrimSpace(row.Content[2].S))
+
+	temp.ExecutionDate, err = parseDate(parseField(2))
 	if err != nil {
-		fmt.Println("Error parsing date:", err)
 		return Transaction{}, 0, err
 	}
-	Type, Code := "", ""
+
 	if row.Content[10].S == " " {
-		Type = strings.TrimSpace(row.Content[6].S)
-		Code = strings.TrimSpace(row.Content[8].S)
+		temp.Type = parseField(6)
+		temp.Code = parseField(8)
 	} else {
-		Type += strings.TrimSpace(row.Content[6].S)
-		Type += " " + strings.TrimSpace(row.Content[8].S)
-		Code = strings.TrimSpace(row.Content[10].S)
+		temp.Type = parseField(6) + " " + parseField(8)
+		temp.Code = parseField(10)
 		offset += 2
 	}
-	Name, AccountOrDebitCard := "", ""
+
 	if row.Content[10+offset].S == " " && row.Content[14+offset].S == " " {
-		AccountOrDebitCard = strings.TrimSpace(row.Content[12+offset].S)
+		temp.AccountOrDebitCard = parseField(12)
 		offset -= 2
 	} else {
-		Name = strings.TrimSpace(row.Content[12+offset].S)
-		AccountOrDebitCard = strings.TrimSpace(row.Content[14+offset].S)
+		temp.Name = parseField(12)
+		temp.AccountOrDebitCard = parseField(14)
 		if row.Content[16+offset].S != " " {
-			AccountOrDebitCard += "\n" + strings.TrimSpace(row.Content[16+offset].S)
+			temp.AccountOrDebitCard += "\n" + parseField(16)
 			offset += 2
 		}
 	}
-	Details := ""
+
 	if row.Content[18+offset].S != " " {
-		Details = strings.TrimSpace(row.Content[18+offset].S)
+		temp.Details = parseField(18)
 		offset += 2
-		if row.Content[18+offset].S != " " {
-			Details += "\n" + strings.TrimSpace(row.Content[18+offset].S)
+		for row.Content[18+offset].S != " " {
+			temp.Details += "\n" + parseField(18)
 			offset += 2
-			if row.Content[18+offset].S != " " {
-				Details += "\n" + strings.TrimSpace(row.Content[18+offset].S)
-				offset += 2
-				if row.Content[18+offset].S != " " {
-					Details += "\n" + strings.TrimSpace(row.Content[18+offset].S)
-					offset += 2
-				}
-			}
 		}
 	}
 
-	Amount := strings.Replace(row.Content[20+offset].S, " ", "", -1)
-	Amount = strings.Replace(Amount, ",", ".", -1)
-	AmountCZK, err := strconv.ParseFloat(Amount, 64)
+	temp.AmountCZK, err = parseFloat(parseField(20))
 	if err != nil {
-		fmt.Println("Error parsing float:", err)
-		return Transaction{}, 0, err
-	}
-	Fees := strings.Replace(row.Content[24+offset].S, " ", "", -1)
-	Fees = strings.Replace(Fees, ",", ".", -1)
-	FeesCZK, err := strconv.ParseFloat(Fees, 64)
-	if err != nil {
-		fmt.Println("Error parsing float:", err)
 		return Transaction{}, 0, err
 	}
 
-	result := Transaction{
-		AccountingDate:     AccountingDate,
-		ExecutionDate:      ExecutionDate,
-		Type:               Type,
-		Code:               Code,
-		Name:               Name,
-		AccountOrDebitCard: AccountOrDebitCard,
-		Details:            Details,
-		AmountCZK:          AmountCZK,
-		FeesCZK:            FeesCZK,
+	temp.FeesCZK, err = parseFloat(parseField(24))
+	if err != nil {
+		return Transaction{}, 0, err
 	}
 
-	/* Lenght of transation. */
 	count := 0
-	for i, content := range row.Content {
-		if content.S == " " {
+	for i := range row.Content {
+		if row.Content[i].S == " " {
 			count++
-			if count == 6 {
-				return result, i + 2, nil
+			if count == numFields {
+				return temp, i + 2, nil
 			}
 		}
 	}
 
-	return result, 4, nil
+	return temp, 4, nil
 }

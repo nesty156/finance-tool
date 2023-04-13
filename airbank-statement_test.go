@@ -10,7 +10,7 @@ import (
 /* Delete afterwards */
 func TestParseAirBankStatement(t *testing.T) {
 	want := 1
-	_, err := parseAirBankStatement("eur-vypis01-2023.pdf")
+	_, err := parseAirBankStatement("vypis02-2023.pdf")
 	if want != 1 || err != nil {
 		t.Fatalf(`Parsing failed.`)
 	}
@@ -282,7 +282,7 @@ func TestCreateTransaction(t *testing.T) {
 				t.Errorf("Test case %s failed: Expected %v, but got %v", tc.name, tc.expectedError, err)
 			}
 			if trans != tc.expectedTrans {
-				t.Errorf("Test case %s failed: Expected %v, but got %v", tc.name, tc.expectedTrans, trans)
+				t.Errorf("Test case %s failed: Expected \n%v, but got \n%v", tc.name, tc.expectedTrans, trans)
 			}
 		})
 	}
