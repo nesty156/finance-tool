@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 )
 
 func main() {
@@ -12,10 +11,13 @@ func main() {
 	var fileName string
 	fmt.Scanf("%s", &fileName)
 
-	file, err := os.Open(fileName) // For read access.
+	content, err := parseAirBankStatement(fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(file)
+	fmt.Println(content.AccountNumber)
+	fmt.Println(content.StartDate)
+	fmt.Println(content.EndDate)
+	fmt.Print(len(content.Transactions))
 }

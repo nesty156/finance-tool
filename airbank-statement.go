@@ -29,16 +29,8 @@ type Transaction struct {
 }
 
 /* Parser airbank statement of account. */
-func parseAirBankStatement() (int, error) {
-	content, err := readPdf("vypis03-2023.pdf") // Read local pdf file
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(content)
-	return 1, nil
-}
-
-func readPdf(path string) (StatementOfAccount, error) {
+func parseAirBankStatement(path string) (StatementOfAccount, error) {
+	layout := "2. 1. 2006"
 	account := StatementOfAccount{}
 
 	r, err := pdf.Open(path)
@@ -56,16 +48,31 @@ func readPdf(path string) (StatementOfAccount, error) {
 
 		rows, _ := p.GetTextByRow()
 		for _, row := range rows {
-			println(">>>> row: ", row.Position)
 			for i, word := range row.Content {
 				if strings.TrimSpace(word.S) == "Číslo účtu:" {
 					account.AccountNumber = row.Content[i+2].S
 				}
+				if strings.TrimSpace(word.S) == "Období výpisu:" {
+					dateStr := row.Content[i+2].S
+					dateParts := strings.Split(dateStr, " - ")
+
+					startDate, err := time.Parse(layout, dateParts[0])
+					if err != nil {
+						fmt.Println("Error parsing start date:", err)
+					}
+
+					endDate, err := time.Parse(layout, dateParts[1])
+					if err != nil {
+						fmt.Println("Error parsing end date:", err)
+					}
+					account.StartDate = startDate
+					account.EndDate = endDate
+				}
 
 				if strings.TrimSpace(word.S) == "Zaúčtování" {
 					offsetStart := 20
-					offsetEnd := 70
-					for j := 0; j < 20; j++ {
+					offsetEnd := 60
+					for j := 0; j < 30; j++ {
 						transactionRow := pdf.Row{Position: 0, Content: row.Content[i+offsetStart : i+offsetEnd]}
 						transaction, offset, err := createTransaction(transactionRow)
 						if err != nil {
@@ -83,8 +90,8 @@ func readPdf(path string) (StatementOfAccount, error) {
 }
 
 func createTransaction(row pdf.Row) (Transaction, int, error) {
-	//TODO: Transaction every column is divided by row.Content[i] == " " after (6th space we have end of transaction)
 	layout := "02.01.2006" // the layout string to parse the date, which follows the pattern "day.month.year"
+	offset := 0
 	AccountingDate, err := time.Parse(layout, strings.TrimSpace(row.Content[0].S))
 	if err != nil {
 		fmt.Println("Error parsing date:", err)
@@ -95,18 +102,59 @@ func createTransaction(row pdf.Row) (Transaction, int, error) {
 		fmt.Println("Error parsing date:", err)
 		return Transaction{}, 0, err
 	}
-	Type := strings.TrimSpace(row.Content[6].S)
-	Code := strings.TrimSpace(row.Content[8].S)
-	Name := strings.TrimSpace(row.Content[12].S)
-	AccountOrDebitCard := strings.TrimSpace(row.Content[14].S)
-	Details := strings.TrimSpace(row.Content[18].S)
-	Details += strings.TrimSpace(row.Content[20].S)
-	AmountCZK, FeesCZK := 0.0, 0.0
-	if AmountCZK, err := strconv.ParseFloat(strings.TrimSpace(row.Content[24].S), 64); err == nil {
-		fmt.Println(AmountCZK)
+	Type, Code := "", ""
+	if row.Content[10].S == " " {
+		Type = strings.TrimSpace(row.Content[6].S)
+		Code = strings.TrimSpace(row.Content[8].S)
+	} else {
+		Type += strings.TrimSpace(row.Content[6].S)
+		Type += " " + strings.TrimSpace(row.Content[8].S)
+		Code = strings.TrimSpace(row.Content[10].S)
+		offset += 2
 	}
-	if FeesCZK, err := strconv.ParseFloat(strings.TrimSpace(row.Content[28].S), 64); err == nil {
-		fmt.Println(FeesCZK)
+	Name, AccountOrDebitCard := "", ""
+	if row.Content[10+offset].S == " " && row.Content[14+offset].S == " " {
+		AccountOrDebitCard = strings.TrimSpace(row.Content[12+offset].S)
+		offset -= 2
+	} else {
+		Name = strings.TrimSpace(row.Content[12+offset].S)
+		AccountOrDebitCard = strings.TrimSpace(row.Content[14+offset].S)
+		if row.Content[16+offset].S != " " {
+			AccountOrDebitCard += "\n" + strings.TrimSpace(row.Content[16+offset].S)
+			offset += 2
+		}
+	}
+	Details := ""
+	if row.Content[18+offset].S != " " {
+		Details = strings.TrimSpace(row.Content[18+offset].S)
+		offset += 2
+		if row.Content[18+offset].S != " " {
+			Details += "\n" + strings.TrimSpace(row.Content[18+offset].S)
+			offset += 2
+			if row.Content[18+offset].S != " " {
+				Details += "\n" + strings.TrimSpace(row.Content[18+offset].S)
+				offset += 2
+				if row.Content[18+offset].S != " " {
+					Details += "\n" + strings.TrimSpace(row.Content[18+offset].S)
+					offset += 2
+				}
+			}
+		}
+	}
+
+	Amount := strings.Replace(row.Content[20+offset].S, " ", "", -1)
+	Amount = strings.Replace(Amount, ",", ".", -1)
+	AmountCZK, err := strconv.ParseFloat(Amount, 64)
+	if err != nil {
+		fmt.Println("Error parsing float:", err)
+		return Transaction{}, 0, err
+	}
+	Fees := strings.Replace(row.Content[24+offset].S, " ", "", -1)
+	Fees = strings.Replace(Fees, ",", ".", -1)
+	FeesCZK, err := strconv.ParseFloat(Fees, 64)
+	if err != nil {
+		fmt.Println("Error parsing float:", err)
+		return Transaction{}, 0, err
 	}
 
 	result := Transaction{
@@ -124,14 +172,13 @@ func createTransaction(row pdf.Row) (Transaction, int, error) {
 	/* Lenght of transation. */
 	count := 0
 	for i, content := range row.Content {
-		_, err := time.Parse(layout, strings.TrimSpace(content.S))
-		if err == nil {
+		if content.S == " " {
 			count++
-			if count == 4 {
-				return result, i - 2, nil
+			if count == 6 {
+				return result, i + 2, nil
 			}
 		}
 	}
 
-	return result, 2, nil
+	return result, 4, nil
 }
