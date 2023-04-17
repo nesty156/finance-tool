@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -13,6 +14,7 @@ type StatementOfAccount struct {
 	AccountNumber string
 	StartDate     time.Time
 	EndDate       time.Time
+	Currnecy      string
 	Transactions  []Transaction
 }
 
@@ -24,8 +26,8 @@ type Transaction struct {
 	Name               string
 	AccountOrDebitCard string
 	Details            string
-	AmountCZK          float64
-	FeesCZK            float64
+	Amount             float64
+	Fee                float64
 }
 
 /* Parser airbank statement of account. */
@@ -52,7 +54,7 @@ func parseAirBankStatement(path string) (StatementOfAccount, error) {
 				wordStr := strings.TrimSpace(word.S)
 				switch wordStr {
 				case "Číslo účtu:":
-					account.AccountNumber = row.Content[i+2].S
+					account.AccountNumber = strings.ReplaceAll(row.Content[i+2].S, " ", "")
 
 				case "Období výpisu:":
 					dateStr := row.Content[i+2].S
@@ -69,9 +71,15 @@ func parseAirBankStatement(path string) (StatementOfAccount, error) {
 						account.EndDate = endDate
 					}
 
+				case "Měna:":
+					account.Currnecy = row.Content[i+2].S
+
 				case "Zaúčtování":
 					start, end := 20, 60
 					for j := 0; j < 30; j++ {
+						if i+end > len(row.Content) {
+							end = len(row.Content) - i
+						}
 						transactionRow := pdf.Row{Position: 0, Content: row.Content[i+start : i+end]}
 						if transaction, offset, err := createTransaction(transactionRow); err != nil {
 							break
@@ -130,7 +138,9 @@ func createTransaction(row pdf.Row) (Transaction, int, error) {
 		offset += 2
 	}
 
-	if row.Content[10+offset].S == " " && row.Content[14+offset].S == " " {
+	if row.Content[10+offset].S == " " && row.Content[12+offset].S == " " {
+		offset -= 4
+	} else if row.Content[10+offset].S == " " && row.Content[14+offset].S == " " {
 		temp.AccountOrDebitCard = parseField(12)
 		offset -= 2
 	} else {
@@ -151,12 +161,12 @@ func createTransaction(row pdf.Row) (Transaction, int, error) {
 		}
 	}
 
-	temp.AmountCZK, err = parseFloat(parseField(20))
+	temp.Amount, err = parseFloat(parseField(20))
 	if err != nil {
 		return Transaction{}, 0, err
 	}
 
-	temp.FeesCZK, err = parseFloat(parseField(24))
+	temp.Fee, err = parseFloat(parseField(24))
 	if err != nil {
 		return Transaction{}, 0, err
 	}
@@ -172,4 +182,53 @@ func createTransaction(row pdf.Row) (Transaction, int, error) {
 	}
 
 	return temp, 4, nil
+}
+
+func mergeTwoStatements(first, second StatementOfAccount) (StatementOfAccount, error) {
+	if first.AccountNumber != second.AccountNumber {
+		return StatementOfAccount{}, fmt.Errorf("Account numbers must be the same to merge")
+	}
+	if first.StartDate.After(second.StartDate) {
+		tmp := first
+		first = second
+		second = tmp
+	}
+	first.EndDate = second.EndDate
+	first.Transactions = append(first.Transactions, second.Transactions...)
+	return first, nil
+}
+
+func mergeStatements(statements []StatementOfAccount) (StatementOfAccount, error) {
+	if len(statements) == 0 {
+		return StatementOfAccount{}, fmt.Errorf("Cannot merge an empty list of statements")
+	}
+	baseStatement := statements[0]
+	for _, statement := range statements[1:] {
+		tmp, err := mergeTwoStatements(baseStatement, statement)
+		if err != nil {
+			continue
+		}
+		baseStatement = tmp
+	}
+	return baseStatement, nil
+}
+
+func sortTransactions(statement StatementOfAccount) StatementOfAccount {
+	// Sort transactions by execution date
+	sort.Slice(statement.Transactions, func(i, j int) bool {
+		return statement.Transactions[i].ExecutionDate.Before(statement.Transactions[j].ExecutionDate)
+	})
+
+	return statement
+}
+
+func sumTransactions(statement StatementOfAccount) float64 {
+	total := 0.0
+
+	// Loop through transactions and add up the amounts
+	for _, transaction := range statement.Transactions {
+		total += transaction.Amount - transaction.Fee
+	}
+
+	return total
 }
