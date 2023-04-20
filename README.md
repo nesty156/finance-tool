@@ -5,3 +5,6 @@ Small project to handle my personal finance.
 ```
 go run .\main.go .\airbank-statement.go .\json.go .\trezor.go .\currency-converter.go
 ```
+
+# TODO
+- [ ] Create or anonymize (pseudonymize) test data.

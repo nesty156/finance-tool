@@ -7,14 +7,14 @@ import (
 	"github.com/dslipak/pdf"
 )
 
-/* Delete afterwards */
-func TestParseAirBankStatement(t *testing.T) {
+/* TODO create fake data */
+/* func TestParseAirBankStatement(t *testing.T) {
 	want := 1
 	_, err := parseAirBankStatement("data/vypis02-2020.pdf")
 	if want != 1 || err != nil {
 		t.Fatalf(`Parsing failed.`)
 	}
-}
+} */
 
 /* Parser airbank statement of account. */
 func TestCreateTransaction(t *testing.T) {
