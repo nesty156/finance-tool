@@ -1,4 +1,4 @@
-name: Run tests
+name: Go Testing only changed files.
 
 on:
   push:
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Go
         uses: actions/setup-go@v3
@@ -20,8 +20,12 @@ jobs:
 
       - name: Get changed files
         id: files
-        run: echo "::set-output name=files::$(git --no-pager diff --name-only origin/main ${{ github.event.pull_request.head.sha }})"
+        run: |
+          FILES=$(git --no-pager diff --name-only origin/main ${{ github.event.pull_request.head.sha }} | grep '_test.go$' | sed 's/.go$/_test.go/' | paste -sd " ")
+          echo "::set-env name=FILES::$FILES"
 
       - name: Run tests
         run: |
-          go test -v -race -coverprofile=coverage.out $(cat ${{ steps.files.outputs.files }} | grep '_test.go$' | sed 's/.go$/_test.go/' | paste -sd " ")
+          go test -v -race -coverprofile=coverage.out $FILES
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
