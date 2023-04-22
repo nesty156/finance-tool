@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- <!DOCTYPE statement SYSTEM "xsl/statement.dtd"> -->
+<!-- $Revision: 1.23 $ $Date: $ -->
+<statement>
+	<header>
+		<stmt number="2019000001" periodicity-description="měsíční"
+			date="2019-04-21" date-previous="" trn-cnt="2" 
+			attachment-type="0"/>
+		<address-branch>
+			<name>MONETA Money Bank, a. s. - ONLINE WEB</name>
+			<adr1>VYSKOČILOVA 1442/1B</adr1>
+			<adr2>PRAHA 4</adr2>
+			<psc>140 28</psc>
+		</address-branch>
+		<account number="123456789" iban="CZ4306000000000123456789" currency="CZK">
+			<stm-bgn-bal>.00</stm-bgn-bal>
+			<debit-tov>4000.00</debit-tov>
+			<credit-tov>5000.00</credit-tov>
+			<debit-tov-ytd>4000.00</debit-tov-ytd>
+			<credit-tov-ytd>5000.00</credit-tov-ytd>
+			<mt-ren-date></mt-ren-date>
+			<cur-rat></cur-rat>
+			<cur-bal-eur>.00</cur-bal-eur>
+			<ren-opt></ren-opt>
+			<prev-rat></prev-rat>
+			<infolimit view="0"></infolimit>
+			<rates><rt-data position="left_1"><b>Dovolujeme si Vás upozornit, že v případě nepovoleného debetu bežného účtu jsme oprávněni účtovat</b></rt-data>
+<rt-data position="left_2"><b>následující poplatky a úroky:</b></rt-data>
+<rt-data position="left_4">Smluvní úrok z nepovoleného debetního zůstatku</rt-data>
+<rt-data position="right_4">dle aktuálního Úrokového lístku</rt-data></rates>
+			<infolimit-campaign view=""></infolimit-campaign>
+			<payment-plan-amount></payment-plan-amount>
+		</account>
+		<customer flag="M" cust-type="P" cust-ico="">
+			<address-customer>
+				<name>Jan Novák</name>
+				<adr1>nám. Republiky 1910/45</adr1>
+				<adr2>155 00  PRAHA 515</adr2>
+				<adr3></adr3>
+				<adr4></adr4>
+				<adr5></adr5>
+				<psc></psc>
+			</address-customer>
+		</customer>
+		
+		<stm-bal-end>1000.00</stm-bal-end>
+		<stm-bal-end-eur>.00</stm-bal-end-eur>
+		<pr-bal></pr-bal>
+		<pst-due-prnc></pst-due-prnc>
+		<pst-due-int></pst-due-int>
+		<lt-int-due></lt-int-due>
+		<lt-int-int></lt-int-int>
+		<fee-int-int></fee-int-int>
+		<ln-bal-end></ln-bal-end>
+		<sts>
+			<st name="dist" symb="123" total="" />
+			<st name="pr-rp" symb="123" total="" />
+			<st name="int-pmt" symb="123" total="" />
+			<st name="lt-int-pmt" symb="123" total="" />
+			<st name="fee-int-pmt" symb="123" total="" />
+		</sts>
+		<advertising>
+			<adv-msg></adv-msg>
+			<adv-msg></adv-msg>
+			<adv-msg></adv-msg>
+			<adv-msg></adv-msg>
+		</advertising>
+
+		<marketing-info></marketing-info>
+
+		<saving-flow>
+			<bonus-rate>.0000</bonus-rate>
+			<turn-date></turn-date>
+			<disp-end-date></disp-end-date>
+			<description></description>
+		</saving-flow>
+		<deposits>
+			<description></description>
+			<date-from></date-from>
+			<date-to></date-to>
+			<date-due></date-due>
+			<base-rate></base-rate>
+			<prem-rate></prem-rate>
+			<rev-period></rev-period>
+			<rev-base></rev-base>
+			<rev-prem></rev-prem>
+		</deposits>
+		<flex-limit>.00</flex-limit>
+		<flex-rate>.0000</flex-rate>
+		<loyalty-info total-reward=".00" flag="0"
+			cycle-from="" cycle-to=""
+			total-cycle-reward=".00" limit-flag="0" />
+	</header>
+	<transactions>
+		<transaction id="190402123456789" other-account-number="1234567890/3030" date-post="2019-04-02" date-eff="2019-04-03"
+                        var-sym="0" con-sym="0" spec-sym="" amount="5000.00" contactless="0" mobile="0" 
+                        orig-ref="" date-action="" mobile-payment="0">
+			<trn-messages type="description">
+				<trn-message position="2">Jan Novák</trn-message>
+			</trn-messages>
+		</transaction>
+
+		<transaction id="190403M00123456789" other-account-number="1234567890/3030" date-post="2019-04-04" date-eff="2019-04-04"
+                        var-sym="" con-sym="" spec-sym="" amount="-4000.00" contactless="0" mobile="0" 
+                        orig-ref="" date-action="" mobile-payment="0">
+			<trn-messages type="description">
+				<trn-message position="2">PŘÍKAZ K ÚHRADĚ</trn-message>
+			</trn-messages>
+			<trn-messages type="debit">
+				<trn-message position="1">SB: 03.04.2019/</trn-message>
+			</trn-messages>
+			<trn-messages type="credit">
+				<trn-message position="1">SB: 03.04.2019/</trn-message>
+			</trn-messages>
+		</transaction>
+	</transactions>
+	<bene>
+		<reward><type>1</type><text>Celkový výdělek na odměnách bene+</text><reward_year>0,00</reward_year><reward_all>0,00</reward_all></reward><reward><type>7</type><text>Celkem za platby kartami</text><reward_year>0,00</reward_year><reward_all>0,00</reward_all></reward><reward><type>3</type><text>Prémiové odměny celkem</text><reward_year>0,00</reward_year><reward_all>0,00</reward_all></reward><current_date>1.1.2019</current_date>
+	</bene>
+	<loyalty-bonuses>
+		
+	</loyalty-bonuses>
+
+	<marketing-info-extra></marketing-info-extra>
+	<document-revisions></document-revisions>
+	<marketing-info></marketing-info>
+	<interest-rates show="0"></interest-rates>
+	<insurance-text>0</insurance-text>
+	<attachment-path></attachment-path>
+	<marketing-messages>
+		<marketing-image></marketing-image>
+	</marketing-messages>
+
+	<acc_no_int>123456789</acc_no_int>
+	<ir-plane>99</ir-plane>
+	<acc-opn-date>2019-03-21</acc-opn-date>
+	<cancel-insurance-letters>
+		
+	</cancel-insurance-letters>
+	<loans>
+		
+	</loans>
+</statement>
