@@ -17,3 +17,5 @@
 #account details etc.
 *.pdf
 *.json
+*.xml
+!moneta/fake-*
