@@ -49,3 +49,14 @@ func parseDegiroPortfolio(csvData []byte) (Portfolio, error) {
 
 	return portfolio, nil
 }
+
+func portfolioValue(portfolio Portfolio) float64 {
+	total := 0.0
+
+	// Loop through products and add up the amounts
+	for _, product := range portfolio.Products {
+		total += product.ValueEUR
+	}
+
+	return total
+}
