@@ -15,7 +15,7 @@ type Portfolio struct {
 type Product struct {
 	Name       string
 	SymbolISIN string
-	Quantity   int
+	Quantity   float64
 	ValueEUR   float64
 }
 
@@ -35,7 +35,7 @@ func parseDegiroPortfolio(csvData []byte) (Portfolio, error) {
 		if err != nil {
 			quantity = 1
 		}
-		product.Quantity = quantity
+		product.Quantity = float64(quantity)
 		valueEUR, err := strconv.ParseFloat(strings.ReplaceAll(record[5], ",", "."), 64)
 		if err != nil {
 			fmt.Println("Failed to parse ValueEUR:", err)
