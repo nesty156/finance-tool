@@ -19,7 +19,14 @@ func handleSignal(sigs chan os.Signal) {
 
 // Prompt user for input
 func promptUser() string {
-	fmt.Print("Choose from [a] airbank, [t] trezor: ")
+	options := []string{"[t] trezor", "[m] moneta", "[d] degiro"}
+	spaces := 12
+	prompt := "Choose from [a] airbank\n"
+	for _, option := range options {
+		prompt += fmt.Sprintf("%*s%s\n", spaces, "", option)
+	}
+	prompt += "Enter your choice: "
+	fmt.Print(prompt)
 	var choice string
 	fmt.Scanln(&choice)
 	return choice
@@ -141,6 +148,39 @@ func main() {
 				log.Printf("Error converting Trezor files: %v", err)
 				continue
 			}
+		case "m":
+			fmt.Print("You chose Moneta. Enter the path to the file: ")
+			var filePath string
+			fmt.Scanf("%s", &filePath)
+			xmlData, err := ioutil.ReadFile(filePath)
+			if err != nil {
+				log.Printf("Error reading file: %v", err)
+				continue
+			}
+			statement, err := parseMonetaStatement(xmlData)
+			if err != nil {
+				log.Printf("Error parsing Moneta statement: %v", err)
+				continue
+			}
+			saveToJson(statement)
+			value := sumTransactions(statement)
+			fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value, statement.Currnecy)
+		case "d":
+			fmt.Print("You chose Degiro. Enter the path to the file: ")
+			var filePath string
+			fmt.Scanf("%s", &filePath)
+			csvData, err := ioutil.ReadFile(filePath)
+			if err != nil {
+				log.Printf("Error reading file: %v", err)
+				continue
+			}
+			portfolio, err := parseDegiroPortfolio(csvData)
+			if err != nil {
+				log.Printf("Error parsing Degiro portfolio: %v", err)
+				continue
+			}
+			value := portfolioValue(portfolio)
+			fmt.Printf("Value of your degiro portfolio is %.2f %s\n", value, "EUR")
 		default:
 			fmt.Println("Invalid choice")
 		}

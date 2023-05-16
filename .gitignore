@@ -18,4 +18,5 @@
 *.pdf
 *.json
 *.xml
+*.csv
 !moneta/fake-*
