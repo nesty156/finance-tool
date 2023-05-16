@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-/* Parser airbank soa of account. */
+/* Parser moneta statement of account. */
 func parseMonetaStatement(xmlData []byte) (StatementOfAccount, error) {
 	var soa StatementOfAccount
 	var result struct {

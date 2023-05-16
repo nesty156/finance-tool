@@ -19,7 +19,7 @@ func handleSignal(sigs chan os.Signal) {
 
 // Prompt user for input
 func promptUser() string {
-	options := []string{"[t] trezor", "[m] moneta", "[d] degiro"}
+	options := []string{"[t] trezor", "[m] moneta", "[d] degiro", "[c] ceska sporitelna"}
 	spaces := 12
 	prompt := "Choose from [a] airbank\n"
 	for _, option := range options {
@@ -148,6 +148,7 @@ func main() {
 				log.Printf("Error converting Trezor files: %v", err)
 				continue
 			}
+			fmt.Scanln()
 		case "m":
 			fmt.Print("You chose Moneta. Enter the path to the file: ")
 			var filePath string
@@ -165,6 +166,7 @@ func main() {
 			saveToJson(statement)
 			value := sumTransactions(statement)
 			fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value, statement.Currnecy)
+			fmt.Scanln()
 		case "d":
 			fmt.Print("You chose Degiro. Enter the path to the file: ")
 			var filePath string
@@ -181,6 +183,25 @@ func main() {
 			}
 			value := portfolioValue(portfolio)
 			fmt.Printf("Value of your degiro portfolio is %.2f %s\n", value, "EUR")
+			fmt.Scanln()
+		case "c":
+			fmt.Print("You chose Ceska Sporitelna. Enter the path to the file: ")
+			var filePath string
+			fmt.Scanf("%s", &filePath)
+			jsonData, err := ioutil.ReadFile(filePath)
+			if err != nil {
+				log.Printf("Error reading file: %v", err)
+				continue
+			}
+			statement, err := parseCeskaSporitelnaStatement(jsonData)
+			if err != nil {
+				log.Printf("Error parsing Ceska Sporitelna statement: %v", err)
+				continue
+			}
+			saveToJson(statement)
+			value := sumTransactions(statement)
+			fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value, statement.Currnecy)
+			fmt.Scanln()
 		default:
 			fmt.Println("Invalid choice")
 		}
