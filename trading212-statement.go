@@ -154,8 +154,8 @@ func parseTrading212History(csvData []byte) ([]TradingTransaction, error) {
 	return history, nil
 }
 
-func TransactionsToPortfolio(transactions []TradingTransaction) Portfolio {
-	portfolio := Portfolio{}
+func TransactionsToPortfolio(transactions []TradingTransaction, portfolioName string) Portfolio {
+	portfolio := Portfolio{Name: portfolioName}
 
 	for _, transaction := range transactions {
 		productIndex := -1
@@ -183,6 +183,9 @@ func TransactionsToPortfolio(transactions []TradingTransaction) Portfolio {
 			} else if transaction.action == "Market sell" {
 				portfolio.Products[productIndex].Quantity += transaction.shares
 				portfolio.Products[productIndex].ValueEUR -= transaction.total
+			}
+			if portfolio.Products[productIndex].Quantity == 0 {
+				portfolio.Products[productIndex].ValueEUR = 0
 			}
 		}
 	}

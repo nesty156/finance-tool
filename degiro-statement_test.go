@@ -12,7 +12,7 @@ func TestParseDegiroPortfolio(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read file %s: %s", csvFile, err)
 	}
-	_, err = parseDegiroPortfolio(csvData)
+	_, err = parseDegiroPortfolio(csvData, "degiro")
 	if err != nil {
 		t.Fatalf("Parsing failed: %s", err)
 	}
