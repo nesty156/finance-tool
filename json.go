@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func saveToJson(soa StatementOfAccount) {
+func saveSoaJson(soa StatementOfAccount) {
 	// convert the statement of account object to a JSON byte slice
 	jsonData, err := json.MarshalIndent(soa, "", "    ")
 	if err != nil {
@@ -25,7 +25,7 @@ func saveToJson(soa StatementOfAccount) {
 	fmt.Println("Statement of account saved to " + name)
 }
 
-func loadFromJson(filename string) (*StatementOfAccount, error) {
+func loadSoaJson(filename string) (*StatementOfAccount, error) {
 	// read the JSON file into a byte slice
 	jsonData, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -43,4 +43,42 @@ func loadFromJson(filename string) (*StatementOfAccount, error) {
 
 	// return the statement of account object
 	return &soa, nil
+}
+
+func savePortfolioJson(portfolio Portfolio) {
+	// convert the statement of account object to a JSON byte slice
+	jsonData, err := json.MarshalIndent(portfolio, "", "    ")
+	if err != nil {
+		panic(err)
+	}
+
+	name := strings.ReplaceAll(portfolio.Name+".json", "/", "-")
+
+	// write the JSON byte slice to a file
+	err = ioutil.WriteFile(name, jsonData, 0644)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Statement of account saved to " + name)
+}
+
+func loadPortfolioJson(filename string) (*Portfolio, error) {
+	// read the JSON file into a byte slice
+	jsonData, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	// create a new portfolio object to hold the parsed data
+	var portfolio Portfolio
+
+	// parse the JSON data into the portfolio object
+	err = json.Unmarshal(jsonData, &portfolio)
+	if err != nil {
+		return nil, err
+	}
+
+	// return the portfolio object
+	return &portfolio, nil
 }

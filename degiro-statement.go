@@ -9,24 +9,25 @@ import (
 )
 
 type Portfolio struct {
+	Name     string
 	Products []Product
 }
 
 type Product struct {
 	Name       string
 	SymbolISIN string
-	Quantity   int
+	Quantity   float64
 	ValueEUR   float64
 }
 
-func parseDegiroPortfolio(csvData []byte) (Portfolio, error) {
+func parseDegiroPortfolio(csvData []byte, portfolioName string) (Portfolio, error) {
 	reader := csv.NewReader(strings.NewReader(string(csvData)))
 	records, err := reader.ReadAll()
 	if err != nil {
 		return Portfolio{}, fmt.Errorf("failed to read CSV: %v", err)
 	}
 
-	portfolio := Portfolio{}
+	portfolio := Portfolio{Name: portfolioName}
 	for _, record := range records[1:] {
 		product := Product{}
 		product.Name = record[0]
@@ -35,7 +36,7 @@ func parseDegiroPortfolio(csvData []byte) (Portfolio, error) {
 		if err != nil {
 			quantity = 1
 		}
-		product.Quantity = quantity
+		product.Quantity = float64(quantity)
 		valueEUR, err := strconv.ParseFloat(strings.ReplaceAll(record[5], ",", "."), 64)
 		if err != nil {
 			fmt.Println("Failed to parse ValueEUR:", err)
