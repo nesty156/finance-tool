@@ -1,4 +1,4 @@
-package main
+package stocks
 
 import (
 	"io/ioutil"
@@ -6,16 +6,14 @@ import (
 	"testing"
 )
 
-func TestParseTrading212History(t *testing.T) {
-	csvFile := filepath.Join("trading212", "vypis.csv")
+func TestParseDegiroPortfolio(t *testing.T) {
+	csvFile := filepath.Join("..", "..", "test-data", "degiro", "Portfolio.csv")
 	csvData, err := ioutil.ReadFile(csvFile)
 	if err != nil {
 		t.Fatalf("Failed to read file %s: %s", csvFile, err)
 	}
-	txs, err := parseTrading212History(csvData)
+	_, err = ParseDegiroPortfolio(csvData, "degiro")
 	if err != nil {
 		t.Fatalf("Parsing failed: %s", err)
 	}
-
-	_ = TransactionsToPortfolio(txs, "trading212")
 }

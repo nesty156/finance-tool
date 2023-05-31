@@ -1,4 +1,4 @@
-package main
+package stocks
 
 import (
 	"encoding/csv"
@@ -25,7 +25,7 @@ type TradingTransaction struct {
 	fee          float64
 }
 
-func parseTrading212History(csvData []byte) ([]TradingTransaction, error) {
+func ParseTrading212History(csvData []byte) ([]TradingTransaction, error) {
 	reader := csv.NewReader(strings.NewReader(string(csvData)))
 	reader.Comma = ','
 

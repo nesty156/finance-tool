@@ -1,4 +1,4 @@
-package main
+package statement
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 )
 
 /* Parser ceska sporitelna statement of account. */
-func parseCeskaSporitelnaStatement(jsonData []byte) (StatementOfAccount, error) {
+func ParseCeskaSporitelnaStatement(jsonData []byte) (StatementOfAccount, error) {
 	var data []struct {
 		Booking        string `json:"booking"`
 		PartnerAccount struct {

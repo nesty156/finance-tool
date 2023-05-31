@@ -1,13 +1,16 @@
-package main
+package util
 
 import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"strings"
+
+	stat "github.com/nesty156/finance-tool/pkg/statement"
+	"github.com/nesty156/finance-tool/pkg/stocks"
 )
 
-func saveSoaJson(soa StatementOfAccount) {
+func SaveSoaJson(soa stat.StatementOfAccount) {
 	// convert the statement of account object to a JSON byte slice
 	jsonData, err := json.MarshalIndent(soa, "", "    ")
 	if err != nil {
@@ -25,7 +28,7 @@ func saveSoaJson(soa StatementOfAccount) {
 	fmt.Println("Statement of account saved to " + name)
 }
 
-func loadSoaJson(filename string) (*StatementOfAccount, error) {
+func LoadSoaJson(filename string) (*stat.StatementOfAccount, error) {
 	// read the JSON file into a byte slice
 	jsonData, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -33,7 +36,7 @@ func loadSoaJson(filename string) (*StatementOfAccount, error) {
 	}
 
 	// create a new statement of account object to hold the parsed data
-	var soa StatementOfAccount
+	var soa stat.StatementOfAccount
 
 	// parse the JSON data into the statement of account object
 	err = json.Unmarshal(jsonData, &soa)
@@ -45,7 +48,7 @@ func loadSoaJson(filename string) (*StatementOfAccount, error) {
 	return &soa, nil
 }
 
-func savePortfolioJson(portfolio Portfolio) {
+func SavePortfolioJson(portfolio stocks.Portfolio) {
 	// convert the statement of account object to a JSON byte slice
 	jsonData, err := json.MarshalIndent(portfolio, "", "    ")
 	if err != nil {
@@ -63,7 +66,7 @@ func savePortfolioJson(portfolio Portfolio) {
 	fmt.Println("Statement of account saved to " + name)
 }
 
-func loadPortfolioJson(filename string) (*Portfolio, error) {
+func LoadPortfolioJson(filename string) (*stocks.Portfolio, error) {
 	// read the JSON file into a byte slice
 	jsonData, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -71,7 +74,7 @@ func loadPortfolioJson(filename string) (*Portfolio, error) {
 	}
 
 	// create a new portfolio object to hold the parsed data
-	var portfolio Portfolio
+	var portfolio stocks.Portfolio
 
 	// parse the JSON data into the portfolio object
 	err = json.Unmarshal(jsonData, &portfolio)

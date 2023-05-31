@@ -1,4 +1,4 @@
-package main
+package bitcoin
 
 import (
 	"encoding/json"
@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	stat "github.com/nesty156/finance-tool/pkg/statement"
 )
 
 type BtcAccount struct {
@@ -34,7 +36,7 @@ type BtcTarget struct {
 	Details         string `json:"metadataLabel"`
 }
 
-func parseBtcAccount(filepath string) (*BtcAccount, error) {
+func ParseBtcAccount(filepath string) (*BtcAccount, error) {
 	// read the JSON file into a byte slice
 	jsonData, err := ioutil.ReadFile(filepath)
 	if err != nil {
@@ -65,13 +67,13 @@ func parseBtcAccount(filepath string) (*BtcAccount, error) {
 	return &btcAcc, nil
 }
 
-func (btcAcc BtcAccount) convertToStatementOfAccount() (*StatementOfAccount, error) {
-	soa := StatementOfAccount{
+func (btcAcc BtcAccount) ConvertToStatementOfAccount() (*stat.StatementOfAccount, error) {
+	soa := stat.StatementOfAccount{
 		AccountNumber: btcAcc.AccountNumber,
 		Currnecy:      btcAcc.Currnecy,
 	}
 
-	transactions := make([]Transaction, len(btcAcc.Transactions))
+	transactions := make([]stat.Transaction, len(btcAcc.Transactions))
 	cz, _ := time.LoadLocation("Europe/Prague")
 	start := time.Unix(9999999999, 0)
 	end := time.Unix(0, 0)

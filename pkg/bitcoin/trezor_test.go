@@ -1,17 +1,9 @@
-package main
+package bitcoin
 
 import (
 	"testing"
 	"time"
 )
-
-/* TODO create fake data */
-/* func TestParseBtcAccount(t *testing.T) {
-	_, err := parseBtcAccount("btc/account1.json")
-	if err != nil {
-		t.Fatalf(`Parsing failed. %v`, err)
-	}
-} */
 
 func TestConvertToStatementOfAccount(t *testing.T) {
 	// Test case 1
@@ -42,7 +34,7 @@ func TestConvertToStatementOfAccount(t *testing.T) {
 		},
 	}
 
-	soa, err := btcAcc.convertToStatementOfAccount()
+	soa, err := btcAcc.ConvertToStatementOfAccount()
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}

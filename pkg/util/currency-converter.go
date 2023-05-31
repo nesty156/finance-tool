@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"encoding/json"
@@ -20,7 +20,7 @@ type ConvertRatesCZK struct {
 	EUR float64
 }
 
-func getBitcoinPrice(currency string) (float64, error) {
+func GetBitcoinPrice(currency string) (float64, error) {
 	url := fmt.Sprintf("https://api.coinbase.com/v2/prices/BTC-%s/spot", currency)
 	res, err := http.Get(url)
 	if err != nil {

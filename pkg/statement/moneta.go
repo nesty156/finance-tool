@@ -1,4 +1,4 @@
-package main
+package statement
 
 import (
 	"encoding/xml"
@@ -6,7 +6,7 @@ import (
 )
 
 /* Parser moneta statement of account. */
-func parseMonetaStatement(xmlData []byte) (StatementOfAccount, error) {
+func ParseMonetaStatement(xmlData []byte) (StatementOfAccount, error) {
 	var soa StatementOfAccount
 	var result struct {
 		Header struct {

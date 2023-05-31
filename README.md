@@ -3,8 +3,12 @@ Small project to handle my personal finance.
 
 # how to run program
 ```
-go run .\main.go .\airbank-statement.go .\json.go .\trezor.go .\currency-converter.go .\moneta-statement.go .\degiro-statement.go .\cs-statement.go .\trading212-statement.go
+go run .\main.go
 ```
 
 # TODO
 - [ ] Create or anonymize (pseudonymize) test data.
+- [ ] Every package test 75%
+- [ ] Selfhosted runner trying just package where is file changed.
+- [ ] Upload data (save hash) and detect duplicates.
+- [ ] Show already processed accounts.

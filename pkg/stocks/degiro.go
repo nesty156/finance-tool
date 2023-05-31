@@ -1,4 +1,4 @@
-package main
+package stocks
 
 import (
 	"encoding/csv"
@@ -8,19 +8,7 @@ import (
 	"strings"
 )
 
-type Portfolio struct {
-	Name     string
-	Products []Product
-}
-
-type Product struct {
-	Name       string
-	SymbolISIN string
-	Quantity   float64
-	ValueEUR   float64
-}
-
-func parseDegiroPortfolio(csvData []byte, portfolioName string) (Portfolio, error) {
+func ParseDegiroPortfolio(csvData []byte, portfolioName string) (Portfolio, error) {
 	reader := csv.NewReader(strings.NewReader(string(csvData)))
 	records, err := reader.ReadAll()
 	if err != nil {
@@ -51,7 +39,7 @@ func parseDegiroPortfolio(csvData []byte, portfolioName string) (Portfolio, erro
 	return portfolio, nil
 }
 
-func portfolioValue(portfolio Portfolio) float64 {
+func PortfolioValue(portfolio Portfolio) float64 {
 	total := 0.0
 
 	// Loop through products and add up the amounts
