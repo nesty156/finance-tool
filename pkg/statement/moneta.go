@@ -1,69 +1,94 @@
 package statement
 
 import (
-	"encoding/xml"
+	"encoding/csv"
+	"io"
+	"os"
+	"strconv"
+	"strings"
 	"time"
+
+	"github.com/gocarina/gocsv"
 )
 
+type DateTime struct {
+	time.Time
+}
+
+type CZKAmount struct {
+	float64
+}
+
+type MonetaTransaction struct {
+	AccountingDate DateTime  `csv:"Splatnost"`
+	ExecutionDate  DateTime  `csv:"Odesláno"`
+	Type           string    `csv:"Typ transakce"`
+	Code           string    `csv:"-"`
+	Name           string    `csv:"Název účtu příjemce"`
+	AccountNumber  string    `csv:"Číslo protiúčtu"`
+	AccountBank    string    `csv:"Banka protiúčtu"`
+	Details        string    `csv:"Zpráva pro příjemce"`
+	Amount         CZKAmount `csv:"Částka"`
+	Fee            float64   `csv:"-"`
+}
+
+// Convert the CSV string as internal date
+func (date *DateTime) UnmarshalCSV(csv string) (err error) {
+	date.Time, err = time.Parse("02.01.2006", csv)
+	return err
+}
+
+// Convert the CSV string to internal float64
+func (f *CZKAmount) UnmarshalCSV(csv string) (err error) {
+	csv = strings.ReplaceAll(csv, " ", "")
+	csv = strings.ReplaceAll(csv, ",", ".")
+	f.float64, err = strconv.ParseFloat(csv, 64)
+	return err
+}
+
 /* Parser moneta statement of account. */
-func ParseMonetaStatement(xmlData []byte) (StatementOfAccount, error) {
-	var soa StatementOfAccount
-	var result struct {
-		Header struct {
-			Account struct {
-				Number    string  `xml:"number,attr"`
-				Currency  string  `xml:"currency,attr"`
-				Balance   float64 `xml:"stm-bgn-bal"`
-				DebitTov  float64 `xml:"debit-tov"`
-				CreditTov float64 `xml:"credit-tov"`
-			} `xml:"account"`
-			Stmt struct {
-				Date       string `xml:"date,attr"`
-				TrnCnt     int    `xml:"trn-cnt,attr"`
-				Periodicty string `xml:"periodicity-description,attr"`
-			} `xml:"stmt"`
-		} `xml:"header"`
-		Transactions []struct {
-			ID        string   `xml:"id,attr"`
-			AccountNo string   `xml:"other-account-number,attr"`
-			DatePost  string   `xml:"date-post,attr"`
-			DateEff   string   `xml:"date-eff,attr"`
-			Amount    float64  `xml:"amount,attr"`
-			Messages  []string `xml:"trn-messages>trn-message"`
-		} `xml:"transactions>transaction"`
-	}
-	if err := xml.Unmarshal(xmlData, &result); err != nil {
-		return soa, err
-	}
-	soa.AccountNumber = result.Header.Account.Number
-	soa.Currnecy = result.Header.Account.Currency
-	soa.EndDate, _ = time.Parse("2006-01-02", result.Header.Stmt.Date)
-	soa.StartDate = soa.EndDate.AddDate(0, -1, 1) // Assume monthly statement
-	soa.Transactions = make([]Transaction, len(result.Transactions))
-	for i, t := range result.Transactions {
-		accountingDate, _ := time.Parse("2006-01-02", t.DatePost)
-		executionDate, _ := time.Parse("2006-01-02", t.DateEff)
-		var details string
-		for i := 1; i < len(t.Messages); i++ {
-			if i == 1 {
-				details += t.Messages[i]
-			} else {
-				details += "\n" + t.Messages[i]
-			}
-		}
+func ParseMonetaStatement(fileName string, accountName string) (StatementOfAccount, error) {
 
-		soa.Transactions[i] = Transaction{
-			AccountingDate:     accountingDate,
-			ExecutionDate:      executionDate,
-			Type:               "",
-			Code:               t.ID,
-			Name:               t.Messages[0],
-			AccountOrDebitCard: t.AccountNo,
-			Details:            details,
-			Amount:             t.Amount,
-			Fee:                0.0,
-		}
-
+	csvFile, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, os.ModePerm)
+	if err != nil {
+		panic(err)
 	}
+	defer csvFile.Close()
+
+	monetaTransactions := []*MonetaTransaction{}
+
+	gocsv.SetCSVReader(func(in io.Reader) gocsv.CSVReader {
+		r := csv.NewReader(in)
+		r.LazyQuotes = true
+		r.Comma = ';' // Use semicolon separator
+		return r      // Allows use quotes in CSV
+	})
+
+	if err := gocsv.UnmarshalFile(csvFile, &monetaTransactions); err != nil { // Load clients from file
+		panic(err)
+	}
+
+	// Convert to internal format
+	transactions := []Transaction{}
+	for _, mt := range monetaTransactions {
+		transactions = append(transactions, ConvertToTransaction(*mt))
+	}
+
+	soa := StatementOfAccount{AccountNumber: accountName, Transactions: transactions, Currency: "CZK", StartDate: transactions[len(transactions)-1].AccountingDate, EndDate: transactions[0].AccountingDate}
+
 	return soa, nil
+}
+
+func ConvertToTransaction(mt MonetaTransaction) Transaction {
+	return Transaction{
+		AccountingDate:     mt.AccountingDate.Time,
+		ExecutionDate:      mt.ExecutionDate.Time,
+		Type:               mt.Type,
+		Code:               mt.Code,
+		Name:               mt.Name,
+		AccountOrDebitCard: mt.AccountNumber + "/" + mt.AccountBank,
+		Details:            mt.Details,
+		Amount:             float64(mt.Amount.float64),
+		Fee:                mt.Fee,
+	}
 }

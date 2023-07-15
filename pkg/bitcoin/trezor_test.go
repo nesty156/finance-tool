@@ -9,7 +9,7 @@ func TestConvertToStatementOfAccount(t *testing.T) {
 	// Test case 1
 	btcAcc := BtcAccount{
 		AccountNumber: "1234",
-		Currnecy:      "BTC",
+		Currency:      "BTC",
 		Transactions: []BtcTransaction{
 			{
 				BlockTime: 1672003002,
@@ -41,8 +41,8 @@ func TestConvertToStatementOfAccount(t *testing.T) {
 	if soa.AccountNumber != "1234" {
 		t.Errorf("Expected account number to be '1234', but got '%s'", soa.AccountNumber)
 	}
-	if soa.Currnecy != "BTC" {
-		t.Errorf("Expected currency to be 'BTC', but got '%s'", soa.Currnecy)
+	if soa.Currency != "BTC" {
+		t.Errorf("Expected currency to be 'BTC', but got '%s'", soa.Currency)
 	}
 	if len(soa.Transactions) != 2 {
 		t.Errorf("Expected 2 transactions, but got %d", len(soa.Transactions))

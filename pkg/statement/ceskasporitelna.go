@@ -25,7 +25,7 @@ func ParseCeskaSporitelnaStatement(jsonData []byte) (StatementOfAccount, error) 
 		return StatementOfAccount{}, err
 	}
 
-	statement := StatementOfAccount{AccountNumber: "CeskaSporitelna", Currnecy: "CZK"}
+	statement := StatementOfAccount{AccountNumber: "CeskaSporitelna", Currency: "CZK"}
 
 	for _, record := range data {
 		bookingTime, err := time.Parse("2006-01-02T15:04:05.000-0700", record.Booking)

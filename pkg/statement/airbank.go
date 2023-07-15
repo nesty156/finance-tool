@@ -12,7 +12,7 @@ type StatementOfAccount struct {
 	AccountNumber string
 	StartDate     time.Time
 	EndDate       time.Time
-	Currnecy      string
+	Currency      string
 	Transactions  []Transaction
 }
 
@@ -70,7 +70,7 @@ func ParseAirBankStatement(path string) (StatementOfAccount, error) {
 					}
 
 				case "Měna:":
-					account.Currnecy = row.Content[i+2].S
+					account.Currency = row.Content[i+2].S
 
 				case "Zaúčtování":
 					start, end := 20, 60
