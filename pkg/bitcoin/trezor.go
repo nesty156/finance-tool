@@ -13,7 +13,7 @@ import (
 
 type BtcAccount struct {
 	AccountNumber string           `json:"-"`
-	Currnecy      string           `json:"coin"`
+	Currency      string           `json:"coin"`
 	Transactions  []BtcTransaction `json:"transactions"`
 }
 
@@ -70,7 +70,7 @@ func ParseBtcAccount(filepath string) (*BtcAccount, error) {
 func (btcAcc BtcAccount) ConvertToStatementOfAccount() (*stat.StatementOfAccount, error) {
 	soa := stat.StatementOfAccount{
 		AccountNumber: btcAcc.AccountNumber,
-		Currnecy:      btcAcc.Currnecy,
+		Currency:      btcAcc.Currency,
 	}
 
 	transactions := make([]stat.Transaction, len(btcAcc.Transactions))

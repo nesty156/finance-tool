@@ -20,4 +20,4 @@
 *.xml
 *.csv
 *.png
-!moneta/fake-*
+!test-data/moneta/fake-*

@@ -113,7 +113,7 @@ func loadAirBank() {
 	*statement = stat.SortTransactions(*statement)
 	value := stat.SumTransactions(*statement)
 
-	fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value, statement.Currnecy)
+	fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value, statement.Currency)
 	util.SaveSoaJson(*statement)
 }
 
@@ -136,13 +136,7 @@ func loadMoneta() {
 	var filePath string
 	fmt.Scanln(&filePath)
 
-	xmlData, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		log.Printf("Error reading file: %v", err)
-		return
-	}
-
-	statement, err := stat.ParseMonetaStatement(xmlData)
+	statement, err := stat.ParseMonetaStatement(filePath, "moneta")
 	if err != nil {
 		log.Printf("Error parsing Moneta statement: %v", err)
 		return
@@ -150,7 +144,7 @@ func loadMoneta() {
 	util.SaveSoaJson(statement)
 
 	value := stat.SumTransactions(statement)
-	fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value, statement.Currnecy)
+	fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value, statement.Currency)
 }
 
 func loadDegiro() {
@@ -194,7 +188,7 @@ func loadCeskaSporitelna() {
 	util.SaveSoaJson(statement)
 
 	value := stat.SumTransactions(statement)
-	fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value, statement.Currnecy)
+	fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value, statement.Currency)
 }
 
 func loadTrading212() {
