@@ -152,13 +152,7 @@ func loadDegiro() {
 	var filePath string
 	fmt.Scanln(&filePath)
 
-	csvData, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		log.Printf("Error reading file: %v", err)
-		return
-	}
-
-	portfolio, err := stocks.ParseDegiroPortfolio(csvData, "degiro")
+	portfolio, err := stocks.ParseDegiroPortfolio(filePath, "degiro")
 	util.SavePortfolioJson(portfolio)
 	if err != nil {
 		log.Printf("Error parsing Degiro portfolio: %v", err)
