@@ -2,13 +2,17 @@ package bitcoin
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"log"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	stat "github.com/nesty156/finance-tool/pkg/statement"
+	"github.com/nesty156/finance-tool/pkg/util"
 )
 
 type BtcAccount struct {
@@ -34,6 +38,51 @@ type BtcTarget struct {
 	Amount          string `json:"amount"`
 	IsAccountTarget bool   `json:"isAccountTarget"`
 	Details         string `json:"metadataLabel"`
+}
+
+// Convert Trezor files to Statement of Account format
+func ConvertTrezorToStatement(dirPath string) (*stat.StatementOfAccount, error) {
+	files, err := ioutil.ReadDir(dirPath)
+	if err != nil {
+		return nil, fmt.Errorf("error reading directory: %v", err)
+	}
+
+	btcCZK, err := util.GetBitcoinPrice("CZK")
+	if err != nil {
+		return nil, fmt.Errorf("error getting bitcoin price: %v", err)
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+
+		filePath := filepath.Join(dirPath, file.Name())
+
+		account, err := ParseBtcAccount(filePath)
+		if err != nil {
+			log.Printf("Error loading file %s: %v", filePath, err)
+			continue
+		}
+
+		statement, err := account.ConvertToStatementOfAccount()
+		if err != nil {
+			log.Printf("Error converting bitcoin account to statement %s: %v", filePath, err)
+			continue
+		}
+
+		fmt.Println(statement.AccountNumber)
+		fmt.Println(statement.StartDate)
+		fmt.Println(statement.EndDate)
+		fmt.Println(len(statement.Transactions))
+
+		value := stat.SumTransactions(*statement)
+
+		fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value*btcCZK, "CZK")
+		util.SaveSoaJson(*statement)
+	}
+
+	return nil, nil
 }
 
 func ParseBtcAccount(filepath string) (*BtcAccount, error) {
@@ -96,9 +145,13 @@ func (btcAcc BtcAccount) ConvertToStatementOfAccount() (*stat.StatementOfAccount
 		transactions[i].Details = transaction.Details
 
 		var err error
+
 		transactions[i].Amount, err = strconv.ParseFloat(transaction.Amount, 64)
 		if err != nil {
 			return nil, err
+		}
+		if transaction.Type == "sent" {
+			transactions[i].Amount = -transactions[i].Amount
 		}
 		transactions[i].Fee, err = strconv.ParseFloat(transaction.Fee, 64)
 		if err != nil {

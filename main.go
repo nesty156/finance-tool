@@ -122,7 +122,7 @@ func loadTrezor() {
 	var dirPath string
 	fmt.Scanln(&dirPath)
 
-	_, err := convertTrezorToStatement(dirPath)
+	_, err := bitcoin.ConvertTrezorToStatement(dirPath)
 	if err != nil {
 		log.Printf("Error converting Trezor files: %v", err)
 		return
@@ -240,52 +240,6 @@ func mergeAirBankStatements(dirPath string) (*stat.StatementOfAccount, error) {
 	}
 
 	return &statement, nil
-}
-
-// TODO: Move to pkg/bitcoin
-// Convert Trezor files to Statement of Account format
-func convertTrezorToStatement(dirPath string) (*stat.StatementOfAccount, error) {
-	files, err := ioutil.ReadDir(dirPath)
-	if err != nil {
-		return nil, fmt.Errorf("error reading directory: %v", err)
-	}
-
-	btcCZK, err := util.GetBitcoinPrice("CZK")
-	if err != nil {
-		return nil, fmt.Errorf("error getting bitcoin price: %v", err)
-	}
-
-	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
-
-		filePath := filepath.Join(dirPath, file.Name())
-
-		account, err := bitcoin.ParseBtcAccount(filePath)
-		if err != nil {
-			log.Printf("Error loading file %s: %v", filePath, err)
-			continue
-		}
-
-		statement, err := account.ConvertToStatementOfAccount()
-		if err != nil {
-			log.Printf("Error converting bitcoin account to statement %s: %v", filePath, err)
-			continue
-		}
-
-		fmt.Println(statement.AccountNumber)
-		fmt.Println(statement.StartDate)
-		fmt.Println(statement.EndDate)
-		fmt.Println(len(statement.Transactions))
-
-		value := stat.SumTransactions(*statement)
-
-		fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value*btcCZK, "CZK")
-		util.SaveSoaJson(*statement)
-	}
-
-	return nil, nil
 }
 
 func mergePortfolios() {
