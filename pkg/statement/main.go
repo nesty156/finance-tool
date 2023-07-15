@@ -10,6 +10,26 @@ import (
 	"github.com/dslipak/pdf"
 )
 
+type StatementOfAccount struct {
+	AccountNumber string
+	StartDate     time.Time
+	EndDate       time.Time
+	Currency      string
+	Transactions  []Transaction
+}
+
+type Transaction struct {
+	AccountingDate     time.Time
+	ExecutionDate      time.Time
+	Type               string
+	Code               string
+	Name               string
+	AccountOrDebitCard string
+	Details            string
+	Amount             float64
+	Fee                float64
+}
+
 /* From row of statement and creates transaction with all data */
 func createTransaction(row pdf.Row) (Transaction, int, error) {
 	offset := 0

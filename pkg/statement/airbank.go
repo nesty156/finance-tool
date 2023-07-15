@@ -8,26 +8,6 @@ import (
 	"github.com/dslipak/pdf"
 )
 
-type StatementOfAccount struct {
-	AccountNumber string
-	StartDate     time.Time
-	EndDate       time.Time
-	Currency      string
-	Transactions  []Transaction
-}
-
-type Transaction struct {
-	AccountingDate     time.Time
-	ExecutionDate      time.Time
-	Type               string
-	Code               string
-	Name               string
-	AccountOrDebitCard string
-	Details            string
-	Amount             float64
-	Fee                float64
-}
-
 /* Parser airbank statement of account. */
 func ParseAirBankStatement(path string) (StatementOfAccount, error) {
 	layout := "2. 1. 2006"
