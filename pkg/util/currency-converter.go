@@ -44,6 +44,9 @@ func GetBitcoinPrice(currency string) (float64, error) {
 	return 0, err
 }
 
-func getConvertRatesCZK(btcCZK, btcEUR, btcUSD float64) ConvertRatesCZK {
+func GetConvertRatesCZK() ConvertRatesCZK {
+	btcCZK, _ := GetBitcoinPrice("CZK")
+	btcEUR, _ := GetBitcoinPrice("EUR")
+	btcUSD, _ := GetBitcoinPrice("USD")
 	return ConvertRatesCZK{BTC: btcCZK, EUR: btcCZK / btcEUR, USD: btcCZK / btcUSD}
 }

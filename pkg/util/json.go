@@ -8,7 +8,46 @@ import (
 
 	stat "github.com/nesty156/finance-tool/pkg/statement"
 	"github.com/nesty156/finance-tool/pkg/stocks"
+	"github.com/nesty156/finance-tool/pkg/user"
 )
+
+func SaveUserStatsJson(user user.AppAccount) {
+	// convert the statement of account object to a JSON byte slice
+	jsonData, err := json.MarshalIndent(user, "", "    ")
+	if err != nil {
+		panic(err)
+	}
+
+	name := strings.ReplaceAll(user.Name+".json", "/", "-")
+
+	// write the JSON byte slice to a file
+	err = ioutil.WriteFile(name, jsonData, 0644)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("User " + user.Name + " saved to " + name)
+}
+
+func LoadUserStatsJson(filepath string) (user.AppAccount, error) {
+	// read the JSON file into a byte slice
+	jsonData, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		return user.AppAccount{}, err
+	}
+
+	// create a new user account object to hold the parsed data
+	var account user.AppAccount
+
+	// parse the JSON data into the user account object
+	err = json.Unmarshal(jsonData, &account)
+	if err != nil {
+		return user.AppAccount{}, err
+	}
+
+	// return the user account
+	return account, nil
+}
 
 func SaveSoaJson(soa stat.StatementOfAccount) {
 	// convert the statement of account object to a JSON byte slice
