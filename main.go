@@ -190,13 +190,7 @@ func loadTrading212() {
 	var filePath string
 	fmt.Scanln(&filePath)
 
-	csvData, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		log.Printf("Error reading file: %v", err)
-		return
-	}
-
-	txs, err := stocks.ParseTrading212History(csvData)
+	txs, err := stocks.ParseTrading212History(filePath)
 	if err != nil {
 		log.Printf("Error parsing Trading 212 history: %v", err)
 		return
