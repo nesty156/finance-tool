@@ -1,188 +1,73 @@
 package stocks
 
 import (
-	"encoding/csv"
-	"fmt"
-	"io"
-	"strconv"
-	"strings"
+	"os"
+
+	"github.com/gocarina/gocsv"
 )
 
 type TradingTransaction struct {
-	action       string
-	time         string
-	isin         string
-	ticker       string
-	name         string
-	shares       float64
-	price        float64
-	currency     string
-	exchangeRate float64
-	total        float64
-	chargeAmount float64
-	notes        string
-	id           string
-	fee          float64
+	Action       string  `csv:"Action"`
+	Time         string  `csv:"Time"`
+	ISIN         string  `csv:"ISIN"`
+	Ticker       string  `csv:"Ticker"`
+	Name         string  `csv:"Name"`
+	Shares       float64 `csv:"No. of shares"`
+	Price        float64 `csv:"Price / share"`
+	Currency     string  `csv:"Currency (Price / share)"`
+	ExchangeRate float64 `csv:"Exchange rate"`
+	Total        float64 `csv:"Total (EUR)"`
+	ChargeAmount float64 `csv:"Charge amount (EUR)"`
+	Notes        string  `csv:"Notes"`
+	ID           string  `csv:"ID"`
+	fee          float64 `csv:"Currency conversion fee (EUR)"`
 }
 
-func ParseTrading212History(csvData []byte) ([]TradingTransaction, error) {
-	reader := csv.NewReader(strings.NewReader(string(csvData)))
-	reader.Comma = ','
+func ParseTrading212History(fileName string) ([]*TradingTransaction, error) {
+	csvFile, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+	defer csvFile.Close()
 
-	var history []TradingTransaction
+	history := []*TradingTransaction{}
 
-	for {
-		record, err := reader.Read()
-
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			fmt.Println("Error reading record:", err)
-			continue
-		}
-
-		if record[0] == "Market buy" {
-			shares, err := strconv.ParseFloat(record[5], 64)
-			if err != nil {
-				fmt.Println("Error parsing shares:", err)
-				continue
-			}
-
-			price, err := strconv.ParseFloat(record[6], 64)
-			if err != nil {
-				fmt.Println("Error parsing price:", err)
-				continue
-			}
-
-			exchangeRate, err := strconv.ParseFloat(record[8], 64)
-			if err != nil {
-				fmt.Println("Error parsing exchange rate:", err)
-				continue
-			}
-
-			total, err := strconv.ParseFloat(record[10], 64)
-			if err != nil {
-				fmt.Println("Error parsing total:", err)
-				continue
-			}
-
-			history = append(history, TradingTransaction{
-				action:       record[0],
-				time:         record[1],
-				isin:         record[2],
-				ticker:       record[3],
-				name:         record[4],
-				shares:       shares,
-				price:        price,
-				currency:     record[7],
-				exchangeRate: exchangeRate,
-				total:        total,
-				chargeAmount: 0,
-				notes:        record[12],
-				id:           record[13],
-				fee:          0,
-			})
-		} else if record[0] == "Market sell" {
-			shares, err := strconv.ParseFloat(record[5], 64)
-			if err != nil {
-				fmt.Println("Error parsing shares:", err)
-				continue
-			}
-
-			price, err := strconv.ParseFloat(record[6], 64)
-			if err != nil {
-				fmt.Println("Error parsing price:", err)
-				continue
-			}
-
-			exchangeRate, err := strconv.ParseFloat(record[8], 64)
-			if err != nil {
-				fmt.Println("Error parsing exchange rate:", err)
-				continue
-			}
-
-			total, err := strconv.ParseFloat(record[10], 64)
-			if err != nil {
-				fmt.Println("Error parsing total:", err)
-				continue
-			}
-
-			history = append(history, TradingTransaction{
-				action:       record[0],
-				time:         record[1],
-				isin:         record[2],
-				ticker:       record[3],
-				name:         record[4],
-				shares:       -shares,
-				price:        price,
-				currency:     record[7],
-				exchangeRate: exchangeRate,
-				total:        total,
-				chargeAmount: 0,
-				notes:        record[12],
-				id:           record[13],
-				fee:          0,
-			})
-		} else if record[0] == "Deposit" {
-			total, err := strconv.ParseFloat(record[11], 64)
-			if err != nil {
-				fmt.Println("Error parsing total:", err)
-				continue
-			}
-
-			history = append(history, TradingTransaction{
-				action:       record[0],
-				time:         record[1],
-				isin:         "",
-				ticker:       "",
-				name:         "",
-				shares:       0,
-				price:        0,
-				currency:     "",
-				exchangeRate: 0,
-				total:        total,
-				chargeAmount: 0,
-				notes:        record[12],
-				id:           record[13],
-				fee:          0,
-			})
-		}
+	if err := gocsv.UnmarshalFile(csvFile, &history); err != nil { // Load clients from file
+		panic(err)
 	}
 
 	return history, nil
 }
 
-func TransactionsToPortfolio(transactions []TradingTransaction, portfolioName string) Portfolio {
+func TransactionsToPortfolio(transactions []*TradingTransaction, portfolioName string) Portfolio {
 	portfolio := Portfolio{Name: portfolioName}
 
 	for _, transaction := range transactions {
 		productIndex := -1
 		for i, product := range portfolio.Products {
-			if product.Name == transaction.name {
+			if product.Name == transaction.Name {
 				productIndex = i
 				break
 			}
 		}
 
 		if productIndex == -1 {
-			newProduct := Product{Name: transaction.name, SymbolISIN: transaction.isin}
-			if transaction.action == "Market buy" {
-				newProduct.Quantity = transaction.shares
-				newProduct.ValueEUR = transaction.total
-			} else if transaction.action == "Market sell" {
-				newProduct.Quantity = -transaction.shares
-				newProduct.ValueEUR = -transaction.total
+			newProduct := Product{Name: transaction.Name, SymbolISIN: transaction.ISIN}
+			if transaction.Action == "Market buy" {
+				newProduct.Quantity = transaction.Shares
+				newProduct.ValueEUR = transaction.Total
+			} else if transaction.Action == "Market sell" {
+				newProduct.Quantity = -transaction.Shares
+				newProduct.ValueEUR = -transaction.Total
 			}
 			portfolio.Products = append(portfolio.Products, newProduct)
 		} else {
-			if transaction.action == "Market buy" {
-				portfolio.Products[productIndex].Quantity += transaction.shares
-				portfolio.Products[productIndex].ValueEUR += transaction.total
-			} else if transaction.action == "Market sell" {
-				portfolio.Products[productIndex].Quantity += transaction.shares
-				portfolio.Products[productIndex].ValueEUR -= transaction.total
+			if transaction.Action == "Market buy" {
+				portfolio.Products[productIndex].Quantity += transaction.Shares
+				portfolio.Products[productIndex].ValueEUR += transaction.Total
+			} else if transaction.Action == "Market sell" {
+				portfolio.Products[productIndex].Quantity += transaction.Shares
+				portfolio.Products[productIndex].ValueEUR -= transaction.Total
 			}
 			if portfolio.Products[productIndex].Quantity == 0 {
 				portfolio.Products[productIndex].ValueEUR = 0
