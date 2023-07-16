@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -8,10 +9,12 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
+	"time"
 
 	"github.com/nesty156/finance-tool/pkg/bitcoin"
 	stat "github.com/nesty156/finance-tool/pkg/statement"
 	"github.com/nesty156/finance-tool/pkg/stocks"
+	"github.com/nesty156/finance-tool/pkg/user"
 	"github.com/nesty156/finance-tool/pkg/util"
 )
 
@@ -24,6 +27,7 @@ const (
 	trading         = "212"
 	merge           = "m"
 	load            = "l"
+	login           = "log"
 )
 
 var (
@@ -36,8 +40,17 @@ func main() {
 	signal.Notify(sigs, syscall.SIGHUP)
 	go handleSignal(sigs)
 
-	options := []string{"[m] merge"}
+	logged := false
+	var logOption string
+
 	for {
+		if !logged {
+			logOption = "[log] log in"
+		} else {
+			logOption = "[log] log out"
+		}
+		options := []string{"[m] merge", logOption}
+
 		prompt := "Choose from [l] load\n"
 		for _, option := range options {
 			prompt += fmt.Sprintf("%*s%s\n", spaces, "", option)
@@ -52,6 +65,27 @@ func main() {
 			loadUser()
 		case merge:
 			mergePortfolios()
+		case login:
+			if !logged {
+				user.Login()
+				logged = true
+				fmt.Println("Logged in as " + user.LoggedUser)
+
+				filepath := user.LoggedUser + ".json"
+				if _, err := os.Stat(filepath); !errors.Is(err, os.ErrNotExist) {
+					account, err := util.LoadUserStatsJson(filepath)
+					if err != nil {
+						log.Printf("Error loading user stats: %v", err)
+						return
+					}
+					ratesCZK := util.GetConvertRatesCZK()
+					account.GetStatsInfo(user.ConvertRatesCZK{BTC: ratesCZK.BTC, EUR: ratesCZK.EUR, USD: ratesCZK.USD})
+				}
+
+			} else {
+				user.Logout()
+				logged = false
+			}
 		default:
 			fmt.Println("Invalid choice")
 		}
@@ -66,7 +100,7 @@ func handleSignal(sigs chan os.Signal) {
 }
 
 func loadUser() {
-	options := []string{"[t] trezor", "[m] moneta", "[d] degiro", "[c] ceska sporitelna", "[212] trading212"}
+	options := []string{"[t] trezor", "[m] moneta", "[d] degiro", "[cs] ceska sporitelna", "[212] trading212"}
 	prompt := "Choose from [a] airbank\n"
 	for _, option := range options {
 		prompt += fmt.Sprintf("%*s%s\n", spaces, "", option)
@@ -94,6 +128,34 @@ func loadUser() {
 	}
 }
 
+func saveStat(name, component, currency string, value float64) {
+	if user.LoggedUser != "" {
+		var account user.AppAccount
+		filepath := user.LoggedUser + ".json"
+		if _, err := os.Stat(filepath); !errors.Is(err, os.ErrNotExist) {
+			account, err = util.LoadUserStatsJson(filepath)
+			if err != nil {
+				log.Printf("Error loading user stats: %v", err)
+				return
+			}
+		}
+
+		account.Name = user.LoggedUser
+		if account.RemoveStat(name) {
+			fmt.Printf("Stat %s updated\n", name)
+		}
+		account.Stats = append(account.Stats, user.Stat{
+			Name:       name,
+			Component:  component,
+			InsertDate: time.Now(),
+			FilePath:   user.LoggedUser,
+			Value:      value,
+			Currency:   currency,
+		})
+		util.SaveUserStatsJson(account)
+	}
+}
+
 func loadAirBank() {
 	fmt.Print("Enter the path to the directory of files: ")
 	var dirPath string
@@ -115,6 +177,8 @@ func loadAirBank() {
 
 	fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value, statement.Currency)
 	util.SaveSoaJson(*statement)
+
+	saveStat(statement.AccountNumber, "airbank", statement.Currency, value)
 }
 
 func loadTrezor() {
@@ -122,13 +186,17 @@ func loadTrezor() {
 	var dirPath string
 	fmt.Scanln(&dirPath)
 
-	_, err := bitcoin.ConvertTrezorToStatement(dirPath)
+	stats, err := bitcoin.ConvertTrezorToStatement(dirPath)
 	if err != nil {
 		log.Printf("Error converting Trezor files: %v", err)
 		return
 	}
 
 	fmt.Println("Conversion successful")
+
+	for _, stat := range stats {
+		saveStat(stat.Name, stat.Component, stat.Currency, stat.Value)
+	}
 }
 
 func loadMoneta() {
@@ -145,6 +213,8 @@ func loadMoneta() {
 
 	value := stat.SumTransactions(statement)
 	fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value, statement.Currency)
+
+	saveStat(statement.AccountNumber, "moneta", statement.Currency, value)
 }
 
 func loadDegiro() {
@@ -161,6 +231,8 @@ func loadDegiro() {
 
 	value := stocks.PortfolioValue(portfolio)
 	fmt.Printf("Value of your Degiro portfolio is %.2f %s\n", value, "EUR")
+
+	saveStat(portfolio.Name, "degiro", "EUR", value)
 }
 
 func loadCeskaSporitelna() {
@@ -183,6 +255,8 @@ func loadCeskaSporitelna() {
 
 	value := stat.SumTransactions(statement)
 	fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value, statement.Currency)
+
+	saveStat(statement.AccountNumber, "ceska sporitelna", statement.Currency, value)
 }
 
 func loadTrading212() {
@@ -200,6 +274,8 @@ func loadTrading212() {
 
 	value := stocks.PortfolioValue(portfolio)
 	fmt.Printf("Value of your Trading 212 portfolio is %.2f %s\n", value, "EUR")
+
+	saveStat(portfolio.Name, "trading212", "EUR", value)
 }
 
 // Parse AirBank statement files and merge them

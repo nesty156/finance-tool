@@ -40,8 +40,15 @@ type BtcTarget struct {
 	Details         string `json:"metadataLabel"`
 }
 
+type TrezorStat struct {
+	Name      string
+	Component string
+	Currency  string
+	Value     float64
+}
+
 // Convert Trezor files to Statement of Account format
-func ConvertTrezorToStatement(dirPath string) (*stat.StatementOfAccount, error) {
+func ConvertTrezorToStatement(dirPath string) ([]TrezorStat, error) {
 	files, err := ioutil.ReadDir(dirPath)
 	if err != nil {
 		return nil, fmt.Errorf("error reading directory: %v", err)
@@ -51,6 +58,8 @@ func ConvertTrezorToStatement(dirPath string) (*stat.StatementOfAccount, error) 
 	if err != nil {
 		return nil, fmt.Errorf("error getting bitcoin price: %v", err)
 	}
+
+	stats := []TrezorStat{}
 
 	for _, file := range files {
 		if file.IsDir() {
@@ -71,18 +80,14 @@ func ConvertTrezorToStatement(dirPath string) (*stat.StatementOfAccount, error) 
 			continue
 		}
 
-		fmt.Println(statement.AccountNumber)
-		fmt.Println(statement.StartDate)
-		fmt.Println(statement.EndDate)
-		fmt.Println(len(statement.Transactions))
-
 		value := stat.SumTransactions(*statement)
 
 		fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value*btcCZK, "CZK")
 		util.SaveSoaJson(*statement)
+		stats = append(stats, TrezorStat{Name: statement.AccountNumber, Component: "trezor", Currency: "BTC", Value: value})
 	}
 
-	return nil, nil
+	return stats, nil
 }
 
 func ParseBtcAccount(filepath string) (*BtcAccount, error) {
