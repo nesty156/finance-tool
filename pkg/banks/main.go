@@ -39,6 +39,10 @@ type USDateTime struct {
 	time.Time
 }
 
+type DateTime struct {
+	time.Time
+}
+
 type Amount struct {
 	float64
 }
@@ -58,6 +62,15 @@ func (date *USDateTime) UnmarshalCSV(csv string) (err error) {
 		return nil
 	}
 	date.Time, err = time.Parse("02/01/2006", csv)
+	return err
+}
+
+// Convert the CSV string as internal date
+func (date *DateTime) UnmarshalCSV(csv string) (err error) {
+	if csv == "" {
+		return nil
+	}
+	date.Time, err = time.Parse("2006-01-02 15:04:05", csv)
 	return err
 }
 
