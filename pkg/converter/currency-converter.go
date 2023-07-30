@@ -1,4 +1,4 @@
-package util
+package converter
 
 import (
 	"encoding/json"
@@ -18,6 +18,12 @@ type ConvertRatesCZK struct {
 	BTC float64
 	USD float64
 	EUR float64
+}
+
+type ConvertRatesEUR struct {
+	BTC float64
+	USD float64
+	CZK float64
 }
 
 func GetBitcoinPrice(currency string) (float64, error) {
@@ -49,4 +55,11 @@ func GetConvertRatesCZK() ConvertRatesCZK {
 	btcEUR, _ := GetBitcoinPrice("EUR")
 	btcUSD, _ := GetBitcoinPrice("USD")
 	return ConvertRatesCZK{BTC: btcCZK, EUR: btcCZK / btcEUR, USD: btcCZK / btcUSD}
+}
+
+func GetConvertRatesEUR() ConvertRatesEUR {
+	btcEUR, _ := GetBitcoinPrice("EUR")
+	btcUSD, _ := GetBitcoinPrice("USD")
+	btcCZK, _ := GetBitcoinPrice("CZK")
+	return ConvertRatesEUR{BTC: btcEUR, USD: btcEUR / btcUSD, CZK: btcEUR / btcCZK}
 }

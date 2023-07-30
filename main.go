@@ -12,6 +12,7 @@ import (
 
 	"github.com/nesty156/finance-tool/pkg/banks"
 	"github.com/nesty156/finance-tool/pkg/bitcoin"
+	"github.com/nesty156/finance-tool/pkg/converter"
 	"github.com/nesty156/finance-tool/pkg/stocks"
 	"github.com/nesty156/finance-tool/pkg/user"
 	"github.com/nesty156/finance-tool/pkg/util"
@@ -78,7 +79,7 @@ func main() {
 						log.Printf("Error loading user stats: %v", err)
 						return
 					}
-					ratesCZK := util.GetConvertRatesCZK()
+					ratesCZK := converter.GetConvertRatesCZK()
 					account.GetStatsInfo(user.ConvertRatesCZK{BTC: ratesCZK.BTC, EUR: ratesCZK.EUR, USD: ratesCZK.USD})
 				}
 
@@ -241,11 +242,9 @@ func loadCeskaSporitelna() {
 }
 
 func loadDegiro() {
-	fmt.Print("Enter the path to the file: ")
-	var filePath string
-	fmt.Scanln(&filePath)
+	filePath, accounName, currency := userInput()
 
-	portfolio, err := stocks.CreateDegiroPortfolio(filePath, "degiro")
+	portfolio, err := stocks.CreateDegiroPortfolio(filePath, accounName, currency)
 	util.SavePortfolioJson(portfolio)
 	if err != nil {
 		log.Printf("Error creating Degiro portfolio: %v", err)
@@ -255,15 +254,13 @@ func loadDegiro() {
 	value := stocks.PortfolioValue(portfolio)
 	fmt.Printf("Value of your Degiro portfolio is %.2f %s\n", value, "EUR")
 
-	saveStat(portfolio.Name, "degiro", "EUR", value)
+	saveStat(portfolio.Name, accounName, currency, value)
 }
 
 func loadTrading212() {
-	fmt.Print("Enter the path to the file: ")
-	var filePath string
-	fmt.Scanln(&filePath)
+	filePath, accounName, currency := userInput()
 
-	portfolio, err := stocks.CreateTrading212Portfolio(filePath, "trading212")
+	portfolio, err := stocks.CreateTrading212Portfolio(filePath, accounName, currency)
 	if err != nil {
 		log.Printf("Error creating Trading 212 fortfolio: %v", err)
 		return
@@ -273,7 +270,7 @@ func loadTrading212() {
 	value := stocks.PortfolioValue(portfolio)
 	fmt.Printf("Value of your Trading 212 portfolio is %.2f %s\n", value, "EUR")
 
-	saveStat(portfolio.Name, "trading212", "EUR", value)
+	saveStat(portfolio.Name, accounName, currency, value)
 }
 
 func loadTrezor() {

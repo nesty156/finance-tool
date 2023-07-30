@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/nesty156/finance-tool/pkg/banks"
+	"github.com/nesty156/finance-tool/pkg/converter"
 	"github.com/nesty156/finance-tool/pkg/util"
 )
 
@@ -54,7 +55,7 @@ func ConvertTrezorToStatement(dirPath string) ([]TrezorStat, error) {
 		return nil, fmt.Errorf("error reading directory: %v", err)
 	}
 
-	btcCZK, err := util.GetBitcoinPrice("CZK")
+	btcCZK, err := converter.GetBitcoinPrice("CZK")
 	if err != nil {
 		return nil, fmt.Errorf("error getting bitcoin price: %v", err)
 	}
