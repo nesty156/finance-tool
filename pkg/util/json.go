@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"strings"
 
-	stat "github.com/nesty156/finance-tool/pkg/statement"
+	"github.com/nesty156/finance-tool/pkg/banks"
 	"github.com/nesty156/finance-tool/pkg/stocks"
 	"github.com/nesty156/finance-tool/pkg/user"
 )
@@ -49,7 +49,7 @@ func LoadUserStatsJson(filepath string) (user.AppAccount, error) {
 	return account, nil
 }
 
-func SaveSoaJson(soa stat.StatementOfAccount) {
+func SaveSoaJson(soa banks.StatementOfAccount) {
 	// convert the statement of account object to a JSON byte slice
 	jsonData, err := json.MarshalIndent(soa, "", "    ")
 	if err != nil {
@@ -67,7 +67,7 @@ func SaveSoaJson(soa stat.StatementOfAccount) {
 	fmt.Println("Statement of account saved to " + name)
 }
 
-func LoadSoaJson(filename string) (*stat.StatementOfAccount, error) {
+func LoadSoaJson(filename string) (*banks.StatementOfAccount, error) {
 	// read the JSON file into a byte slice
 	jsonData, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -75,7 +75,7 @@ func LoadSoaJson(filename string) (*stat.StatementOfAccount, error) {
 	}
 
 	// create a new statement of account object to hold the parsed data
-	var soa stat.StatementOfAccount
+	var soa banks.StatementOfAccount
 
 	// parse the JSON data into the statement of account object
 	err = json.Unmarshal(jsonData, &soa)

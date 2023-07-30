@@ -1,4 +1,4 @@
-package statement
+package banks
 
 import (
 	"encoding/json"

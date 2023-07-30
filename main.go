@@ -11,8 +11,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/nesty156/finance-tool/pkg/banks"
 	"github.com/nesty156/finance-tool/pkg/bitcoin"
-	stat "github.com/nesty156/finance-tool/pkg/statement"
 	"github.com/nesty156/finance-tool/pkg/stocks"
 	"github.com/nesty156/finance-tool/pkg/user"
 	"github.com/nesty156/finance-tool/pkg/util"
@@ -172,8 +172,8 @@ func loadAirBank() {
 	fmt.Println(statement.EndDate)
 	fmt.Println(len(statement.Transactions))
 
-	*statement = stat.SortTransactions(*statement)
-	value := stat.SumTransactions(*statement)
+	*statement = banks.SortTransactions(*statement)
+	value := banks.SumTransactions(*statement)
 
 	fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value, statement.Currency)
 	util.SaveSoaJson(*statement)
@@ -204,14 +204,14 @@ func loadMoneta() {
 	var filePath string
 	fmt.Scanln(&filePath)
 
-	statement, err := stat.ParseMonetaStatement(filePath, "moneta")
+	statement, err := banks.ParseMonetaStatement(filePath, "moneta")
 	if err != nil {
 		log.Printf("Error parsing Moneta statement: %v", err)
 		return
 	}
 	util.SaveSoaJson(statement)
 
-	value := stat.SumTransactions(statement)
+	value := banks.SumTransactions(statement)
 	fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value, statement.Currency)
 
 	saveStat(statement.AccountNumber, "moneta", statement.Currency, value)
@@ -246,14 +246,14 @@ func loadCeskaSporitelna() {
 		return
 	}
 
-	statement, err := stat.ParseCeskaSporitelnaStatement(jsonData)
+	statement, err := banks.ParseCeskaSporitelnaStatement(jsonData)
 	if err != nil {
 		log.Printf("Error parsing Ceska Sporitelna statement: %v", err)
 		return
 	}
 	util.SaveSoaJson(statement)
 
-	value := stat.SumTransactions(statement)
+	value := banks.SumTransactions(statement)
 	fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value, statement.Currency)
 
 	saveStat(statement.AccountNumber, "ceska sporitelna", statement.Currency, value)
@@ -279,13 +279,13 @@ func loadTrading212() {
 }
 
 // Parse AirBank statement files and merge them
-func mergeAirBankStatements(dirPath string) (*stat.StatementOfAccount, error) {
+func mergeAirBankStatements(dirPath string) (*banks.StatementOfAccount, error) {
 	files, err := ioutil.ReadDir(dirPath)
 	if err != nil {
 		return nil, fmt.Errorf("error reading directory: %v", err)
 	}
 
-	var contents []stat.StatementOfAccount
+	var contents []banks.StatementOfAccount
 	for _, file := range files {
 		if file.IsDir() {
 			continue
@@ -293,7 +293,7 @@ func mergeAirBankStatements(dirPath string) (*stat.StatementOfAccount, error) {
 
 		filePath := filepath.Join(dirPath, file.Name())
 
-		content, err := stat.ParseAirBankStatement(filePath)
+		content, err := banks.ParseAirBankStatement(filePath)
 		if err != nil {
 			log.Printf("Error loading file %s: %v", filePath, err)
 			continue
@@ -304,7 +304,7 @@ func mergeAirBankStatements(dirPath string) (*stat.StatementOfAccount, error) {
 		contents = append(contents, content)
 	}
 
-	statement, err := stat.MergeStatements(contents)
+	statement, err := banks.MergeStatements(contents)
 	if err != nil {
 		return nil, fmt.Errorf("error creating statement: %v", err)
 	}

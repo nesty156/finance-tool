@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	stat "github.com/nesty156/finance-tool/pkg/statement"
+	"github.com/nesty156/finance-tool/pkg/banks"
 	"github.com/nesty156/finance-tool/pkg/util"
 )
 
@@ -80,7 +80,7 @@ func ConvertTrezorToStatement(dirPath string) ([]TrezorStat, error) {
 			continue
 		}
 
-		value := stat.SumTransactions(*statement)
+		value := banks.SumTransactions(*statement)
 
 		fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value*btcCZK, "CZK")
 		util.SaveSoaJson(*statement)
@@ -121,13 +121,13 @@ func ParseBtcAccount(filepath string) (*BtcAccount, error) {
 	return &btcAcc, nil
 }
 
-func (btcAcc BtcAccount) ConvertToStatementOfAccount() (*stat.StatementOfAccount, error) {
-	soa := stat.StatementOfAccount{
+func (btcAcc BtcAccount) ConvertToStatementOfAccount() (*banks.StatementOfAccount, error) {
+	soa := banks.StatementOfAccount{
 		AccountNumber: btcAcc.AccountNumber,
 		Currency:      btcAcc.Currency,
 	}
 
-	transactions := make([]stat.Transaction, len(btcAcc.Transactions))
+	transactions := make([]banks.Transaction, len(btcAcc.Transactions))
 	cz, _ := time.LoadLocation("Europe/Prague")
 	start := time.Unix(9999999999, 0)
 	end := time.Unix(0, 0)
