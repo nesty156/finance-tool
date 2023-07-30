@@ -1,63 +1,92 @@
 package stocks
 
 import (
+	"fmt"
 	"os"
-	"strconv"
-	"strings"
+	"time"
 
 	"github.com/gocarina/gocsv"
 )
 
-type EURAmount struct {
-	float64
+type DegiroTransaction struct {
+	Date         string  `csv:"Datum"`
+	Time         string  `csv:"Čas"`
+	ISIN         string  `csv:"ISIN"`
+	Name         string  `csv:"Produkt"`
+	Shares       float64 `csv:"Počet"`
+	Price        float64 `csv:"Hodnota"`
+	ExchangeRate float64 `csv:"Směnný kurz"`
+	Total        float64 `csv:"Celkem"`
+	ID           string  `csv:"ID objednávky"`
+	fee          float64 `csv:"Transaction and/or third"`
 }
 
-type DegiroProduct struct {
-	Name       string    `csv:"Produkt"`
-	SymbolISIN string    `csv:"Symbol/ISIN"`
-	Quantity   float64   `csv:"Množství"`
-	ValueEUR   EURAmount `csv:"Hodnota v EUR"`
-}
-
-// Convert the CSV string to internal float64
-func (f *EURAmount) UnmarshalCSV(csv string) (err error) {
-	csv = strings.ReplaceAll(csv, " ", "")
-	csv = strings.ReplaceAll(csv, ",", ".")
-	f.float64, err = strconv.ParseFloat(csv, 64)
-	return err
-}
-
-func CreateDegiroPortfolio(fileName string, portfolioName string) (Portfolio, error) {
+func CreateDegiroPortfolio(fileName, portfolioName, currency string) (Portfolio, error) {
 	csvFile, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if err != nil {
 		panic(err)
 	}
 	defer csvFile.Close()
 
-	degiroProducts := []*DegiroProduct{}
+	txs := []*DegiroTransaction{}
 
-	if err := gocsv.UnmarshalFile(csvFile, &degiroProducts); err != nil { // Load clients from file
+	if err := gocsv.UnmarshalFile(csvFile, &txs); err != nil {
 		panic(err)
 	}
 
-	// Convert to internal format
-	products := []Product{}
-	for _, product := range degiroProducts {
-		products = append(products, ConvertToProduct(*product))
-	}
-
-	portfolio := Portfolio{Name: portfolioName, Products: products}
-
-	return portfolio, nil
+	return DegiroTXsToPortfolio(txs, portfolioName, currency), nil
 }
 
-func ConvertToProduct(degiroProduct DegiroProduct) Product {
-	product := Product{
-		Name:       degiroProduct.Name,
-		SymbolISIN: degiroProduct.SymbolISIN,
-		Quantity:   degiroProduct.Quantity,
-		ValueEUR:   degiroProduct.ValueEUR.float64,
+func DegiroTXsToPortfolio(tradingTXs []*DegiroTransaction, portfolioName, currency string) Portfolio {
+	portfolio := Portfolio{Name: portfolioName, Currency: currency}
+	transactions := []Transaction{}
+
+	for _, tx := range tradingTXs {
+		productIndex := -1
+		for i, product := range portfolio.Products {
+			if product.Name == tx.Name {
+				productIndex = i
+				break
+			}
+		}
+
+		if productIndex == -1 {
+			newProduct := Product{Name: tx.Name, SymbolISIN: tx.ISIN, Quantity: tx.Shares, Value: -tx.Total, Currency: currency}
+			portfolio.Products = append(portfolio.Products, newProduct)
+		} else {
+			portfolio.Products[productIndex].Quantity += tx.Shares
+			portfolio.Products[productIndex].Value -= tx.Total
+			if portfolio.Products[productIndex].Quantity == 0 {
+				portfolio.Products[productIndex].Value = 0
+			}
+		}
+		transaction, _ := DegiroTXConvert(*tx, "EUR")
+		transactions = append(transactions, transaction)
 	}
 
-	return product
+	portfolio.Transactions = transactions
+	return portfolio
+}
+
+func DegiroTXConvert(tx DegiroTransaction, currency string) (Transaction, error) {
+	layout := "02-01-2006 15:04"
+
+	// Parse the date-time string into a time.Time value
+	parsedTime, err := time.Parse(layout, tx.Date+" "+tx.Time)
+	if err != nil {
+		fmt.Println("Error parsing date-time:", err)
+		return Transaction{}, err
+	}
+	return Transaction{
+		Time:         parsedTime,
+		ISIN:         tx.ISIN,
+		Name:         tx.Name,
+		Shares:       tx.Shares,
+		Price:        tx.Price,
+		Currency:     "EUR",
+		ExchangeRate: tx.ExchangeRate,
+		Total:        tx.Total,
+		ID:           tx.ID,
+		fee:          tx.fee,
+	}, nil
 }
