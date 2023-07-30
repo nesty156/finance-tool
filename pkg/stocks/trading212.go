@@ -23,20 +23,20 @@ type TradingTransaction struct {
 	fee          float64 `csv:"Currency conversion fee (EUR)"`
 }
 
-func ParseTrading212History(fileName string) ([]*TradingTransaction, error) {
+func CreateTrading212Portfolio(fileName string, portfolioName string) (Portfolio, error) {
 	csvFile, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if err != nil {
 		panic(err)
 	}
 	defer csvFile.Close()
 
-	history := []*TradingTransaction{}
+	txs := []*TradingTransaction{}
 
-	if err := gocsv.UnmarshalFile(csvFile, &history); err != nil { // Load clients from file
+	if err := gocsv.UnmarshalFile(csvFile, &txs); err != nil { // Load clients from file
 		panic(err)
 	}
 
-	return history, nil
+	return TransactionsToPortfolio(txs, portfolioName), nil
 }
 
 func TransactionsToPortfolio(transactions []*TradingTransaction, portfolioName string) Portfolio {
@@ -76,26 +76,4 @@ func TransactionsToPortfolio(transactions []*TradingTransaction, portfolioName s
 	}
 
 	return portfolio
-}
-
-func MergePortfolios(destination Portfolio, source Portfolio) Portfolio {
-	for _, sourceProduct := range source.Products {
-		productIndex := -1
-		for i, destinationProduct := range destination.Products {
-			if destinationProduct.SymbolISIN == sourceProduct.SymbolISIN {
-				productIndex = i
-				break
-			}
-		}
-
-		if productIndex == -1 {
-			newProduct := Product{Name: sourceProduct.Name, SymbolISIN: sourceProduct.SymbolISIN, Quantity: sourceProduct.Quantity, ValueEUR: sourceProduct.ValueEUR}
-			destination.Products = append(destination.Products, newProduct)
-		} else {
-			destination.Products[productIndex].Quantity += sourceProduct.Quantity
-			destination.Products[productIndex].ValueEUR += sourceProduct.ValueEUR
-		}
-	}
-
-	return destination
 }

@@ -5,9 +5,9 @@ import (
 	"testing"
 )
 
-func TestParseDegiroPortfolio(t *testing.T) {
+func TestCreateDegiroPortfolio(t *testing.T) {
 	csvFile := filepath.Join("..", "..", "test-data", "degiro", "Portfolio.csv")
-	_, err := ParseDegiroPortfolio(csvFile, "degiro")
+	_, err := CreateDegiroPortfolio(csvFile, "degiro")
 	if err != nil {
 		t.Fatalf("Parsing failed: %s", err)
 	}

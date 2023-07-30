@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-/* Parser ceska sporitelna statement of account. */
-func ParseCeskaSporitelnaStatement(jsonData []byte) (StatementOfAccount, error) {
+// Create statement of account from Ceska Sporitelna JSON file (transaction history)
+func CreateCSStatement(jsonData []byte) (StatementOfAccount, error) {
 	var data []struct {
 		Booking        string `json:"booking"`
 		PartnerAccount struct {

@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 	"time"
 
@@ -157,26 +156,19 @@ func saveStat(name, component, currency string, value float64) {
 }
 
 func loadAirBank() {
-	fmt.Print("Enter the path to the directory of files: ")
-	var dirPath string
-	fmt.Scanln(&dirPath)
+	fmt.Print("Enter the path to the file: ")
+	var filePath string
+	fmt.Scanln(&filePath)
 
-	statement, err := mergeAirBankStatements(dirPath)
+	statement, err := banks.CreateAirBankStatement(filePath, "moneta")
 	if err != nil {
-		log.Printf("Error merging AirBank statements: %v", err)
+		log.Printf("Error creating Airbank statement: %v", err)
 		return
 	}
+	util.SaveSoaJson(statement)
 
-	fmt.Println(statement.AccountNumber)
-	fmt.Println(statement.StartDate)
-	fmt.Println(statement.EndDate)
-	fmt.Println(len(statement.Transactions))
-
-	*statement = banks.SortTransactions(*statement)
-	value := banks.SumTransactions(*statement)
-
+	value := banks.SumTransactions(statement)
 	fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value, statement.Currency)
-	util.SaveSoaJson(*statement)
 
 	saveStat(statement.AccountNumber, "airbank", statement.Currency, value)
 }
@@ -204,9 +196,9 @@ func loadMoneta() {
 	var filePath string
 	fmt.Scanln(&filePath)
 
-	statement, err := banks.ParseMonetaStatement(filePath, "moneta")
+	statement, err := banks.CreateMonetaStatement(filePath, "moneta")
 	if err != nil {
-		log.Printf("Error parsing Moneta statement: %v", err)
+		log.Printf("Error creating Moneta statement: %v", err)
 		return
 	}
 	util.SaveSoaJson(statement)
@@ -215,24 +207,6 @@ func loadMoneta() {
 	fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value, statement.Currency)
 
 	saveStat(statement.AccountNumber, "moneta", statement.Currency, value)
-}
-
-func loadDegiro() {
-	fmt.Print("Enter the path to the file: ")
-	var filePath string
-	fmt.Scanln(&filePath)
-
-	portfolio, err := stocks.ParseDegiroPortfolio(filePath, "degiro")
-	util.SavePortfolioJson(portfolio)
-	if err != nil {
-		log.Printf("Error parsing Degiro portfolio: %v", err)
-		return
-	}
-
-	value := stocks.PortfolioValue(portfolio)
-	fmt.Printf("Value of your Degiro portfolio is %.2f %s\n", value, "EUR")
-
-	saveStat(portfolio.Name, "degiro", "EUR", value)
 }
 
 func loadCeskaSporitelna() {
@@ -246,9 +220,9 @@ func loadCeskaSporitelna() {
 		return
 	}
 
-	statement, err := banks.ParseCeskaSporitelnaStatement(jsonData)
+	statement, err := banks.CreateCSStatement(jsonData)
 	if err != nil {
-		log.Printf("Error parsing Ceska Sporitelna statement: %v", err)
+		log.Printf("Error creating Ceska Sporitelna statement: %v", err)
 		return
 	}
 	util.SaveSoaJson(statement)
@@ -259,57 +233,40 @@ func loadCeskaSporitelna() {
 	saveStat(statement.AccountNumber, "ceska sporitelna", statement.Currency, value)
 }
 
+func loadDegiro() {
+	fmt.Print("Enter the path to the file: ")
+	var filePath string
+	fmt.Scanln(&filePath)
+
+	portfolio, err := stocks.CreateDegiroPortfolio(filePath, "degiro")
+	util.SavePortfolioJson(portfolio)
+	if err != nil {
+		log.Printf("Error creating Degiro portfolio: %v", err)
+		return
+	}
+
+	value := stocks.PortfolioValue(portfolio)
+	fmt.Printf("Value of your Degiro portfolio is %.2f %s\n", value, "EUR")
+
+	saveStat(portfolio.Name, "degiro", "EUR", value)
+}
+
 func loadTrading212() {
 	fmt.Print("Enter the path to the file: ")
 	var filePath string
 	fmt.Scanln(&filePath)
 
-	txs, err := stocks.ParseTrading212History(filePath)
+	portfolio, err := stocks.CreateTrading212Portfolio(filePath, "trading212")
 	if err != nil {
-		log.Printf("Error parsing Trading 212 history: %v", err)
+		log.Printf("Error creating Trading 212 fortfolio: %v", err)
 		return
 	}
-	portfolio := stocks.TransactionsToPortfolio(txs, "trading212")
 	util.SavePortfolioJson(portfolio)
 
 	value := stocks.PortfolioValue(portfolio)
 	fmt.Printf("Value of your Trading 212 portfolio is %.2f %s\n", value, "EUR")
 
 	saveStat(portfolio.Name, "trading212", "EUR", value)
-}
-
-// Parse AirBank statement files and merge them
-func mergeAirBankStatements(dirPath string) (*banks.StatementOfAccount, error) {
-	files, err := ioutil.ReadDir(dirPath)
-	if err != nil {
-		return nil, fmt.Errorf("error reading directory: %v", err)
-	}
-
-	var contents []banks.StatementOfAccount
-	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
-
-		filePath := filepath.Join(dirPath, file.Name())
-
-		content, err := banks.ParseAirBankStatement(filePath)
-		if err != nil {
-			log.Printf("Error loading file %s: %v", filePath, err)
-			continue
-		}
-
-		fmt.Printf("Content of file %s:\n", filePath)
-		fmt.Println(len(content.Transactions))
-		contents = append(contents, content)
-	}
-
-	statement, err := banks.MergeStatements(contents)
-	if err != nil {
-		return nil, fmt.Errorf("error creating statement: %v", err)
-	}
-
-	return &statement, nil
 }
 
 func mergePortfolios() {

@@ -5,9 +5,9 @@ import (
 	"testing"
 )
 
-func TestParseMonetaStatement(t *testing.T) {
-	csvFile := filepath.Join("..", "..", "test-data", "moneta", "moneta-acc.csv")
-	_, err := ParseMonetaStatement(csvFile, "moneta")
+func TestCreateMonetaStatement(t *testing.T) {
+	csvFile := filepath.Join("..", "..", "test-data", "moneta", "txs.csv")
+	_, err := CreateMonetaStatement(csvFile, "moneta")
 	if err != nil {
 		t.Fatalf("Parsing failed: %s", err)
 	}
