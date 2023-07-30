@@ -19,11 +19,12 @@ import (
 
 const (
 	airbank         = "a"
-	trezor          = "t"
+	revolut         = "r"
 	moneta          = "m"
-	degiro          = "d"
 	ceskasporitelna = "cs"
+	degiro          = "d"
 	trading         = "212"
+	trezor          = "t"
 	merge           = "m"
 	load            = "l"
 	login           = "log"
@@ -99,7 +100,7 @@ func handleSignal(sigs chan os.Signal) {
 }
 
 func loadUser() {
-	options := []string{"[t] trezor", "[m] moneta", "[d] degiro", "[cs] ceska sporitelna", "[212] trading212"}
+	options := []string{"[r] revolut", "[m] moneta", "[cs] ceska sporitelna", "[d] degiro", "[212] trading212", "[t] trezor"}
 	prompt := "Choose from [a] airbank\n"
 	for _, option := range options {
 		prompt += fmt.Sprintf("%*s%s\n", spaces, "", option)
@@ -112,16 +113,18 @@ func loadUser() {
 	switch choice {
 	case airbank:
 		loadAirBank()
-	case trezor:
-		loadTrezor()
+	case revolut:
+		loadRevolut()
 	case moneta:
 		loadMoneta()
-	case degiro:
-		loadDegiro()
 	case ceskasporitelna:
 		loadCeskaSporitelna()
+	case degiro:
+		loadDegiro()
 	case trading:
 		loadTrading212()
+	case trezor:
+		loadTrezor()
 	default:
 		fmt.Println("Invalid choice")
 	}
@@ -177,25 +180,22 @@ func loadAirBank() {
 	value := banks.SumTransactions(statement)
 	fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value, statement.Currency)
 
-	saveStat(statement.AccountNumber, "airbank", statement.Currency, value)
+	saveStat(statement.AccountNumber, accounName, statement.Currency, value)
 }
 
-func loadTrezor() {
-	fmt.Print("Enter the path to the directory of files: ")
-	var dirPath string
-	fmt.Scanln(&dirPath)
-
-	stats, err := bitcoin.ConvertTrezorToStatement(dirPath)
+func loadRevolut() {
+	filePath, accounName, currency := userInput()
+	statement, err := banks.CreateRevolutStatement(filePath, accounName, currency)
 	if err != nil {
-		log.Printf("Error converting Trezor files: %v", err)
+		log.Printf("Error creating Airbank statement: %v", err)
 		return
 	}
+	util.SaveSoaJson(statement)
 
-	fmt.Println("Conversion successful")
+	value := banks.SumTransactions(statement)
+	fmt.Printf("Value of account %s is %.2f %s\n", statement.AccountNumber, value, statement.Currency)
 
-	for _, stat := range stats {
-		saveStat(stat.Name, stat.Component, stat.Currency, stat.Value)
-	}
+	saveStat(statement.AccountNumber, accounName, statement.Currency, value)
 }
 
 func loadMoneta() {
@@ -274,6 +274,24 @@ func loadTrading212() {
 	fmt.Printf("Value of your Trading 212 portfolio is %.2f %s\n", value, "EUR")
 
 	saveStat(portfolio.Name, "trading212", "EUR", value)
+}
+
+func loadTrezor() {
+	fmt.Print("Enter the path to the directory of files: ")
+	var dirPath string
+	fmt.Scanln(&dirPath)
+
+	stats, err := bitcoin.ConvertTrezorToStatement(dirPath)
+	if err != nil {
+		log.Printf("Error converting Trezor files: %v", err)
+		return
+	}
+
+	fmt.Println("Conversion successful")
+
+	for _, stat := range stats {
+		saveStat(stat.Name, stat.Component, stat.Currency, stat.Value)
+	}
 }
 
 func mergePortfolios() {
