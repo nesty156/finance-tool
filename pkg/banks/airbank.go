@@ -3,9 +3,11 @@ package banks
 import (
 	"encoding/csv"
 	"io"
+	"io/ioutil"
 	"os"
 
 	"github.com/gocarina/gocsv"
+	"golang.org/x/text/encoding/charmap"
 )
 
 type AirBankTransaction struct {
@@ -21,16 +23,56 @@ type AirBankTransaction struct {
 	Fee            float64  `csv:"-"`
 }
 
-// Create statement of account from AirBank CSV file (transaction history)
-func CreateAirBankStatement(fileName string, accountName string) (StatementOfAccount, error) {
+func IsUTF8(content []byte) bool {
+	if len(content) >= 3 && content[0] == 0xEF && content[1] == 0xBB && content[2] == 0xBF {
+		return true
+	}
+	return false
+}
 
-	csvFile, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, os.ModePerm)
+func ConvertCP1250ToUTF8(filePath string) error {
+	// Read the file
+	content, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+
+	// Check if the file is already UTF-8 encoded
+	if IsUTF8(content) {
+		return nil // No need to convert, already UTF-8
+	}
+
+	// Convert CP1250 to UTF-8
+	utf8Content, err := charmap.Windows1250.NewDecoder().Bytes(content)
+	if err != nil {
+		return err
+	}
+
+	// Write the UTF-8 content back to the file
+	err = ioutil.WriteFile(filePath, append([]byte{0xEF, 0xBB, 0xBF}, utf8Content...), 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Create statement of account from AirBank CSV file (transaction history)
+func CreateAirBankStatement(filePath string, accountName string) (StatementOfAccount, error) {
+
+	// Convert CP1250 to UTF-8
+	err := ConvertCP1250ToUTF8(filePath)
+	if err != nil {
+		panic(err)
+	}
+
+	csvFile, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if err != nil {
 		panic(err)
 	}
 	defer csvFile.Close()
 
-	monetaTransactions := []*AirBankTransaction{}
+	airbankTXs := []*AirBankTransaction{}
 
 	gocsv.SetCSVReader(func(in io.Reader) gocsv.CSVReader {
 		r := csv.NewReader(in)
@@ -39,14 +81,14 @@ func CreateAirBankStatement(fileName string, accountName string) (StatementOfAcc
 		return r      // Allows use quotes in CSV
 	})
 
-	if err := gocsv.UnmarshalFile(csvFile, &monetaTransactions); err != nil { // Load clients from file
+	if err := gocsv.UnmarshalFile(csvFile, &airbankTXs); err != nil { // Load clients from file
 		panic(err)
 	}
 
 	// Convert to internal format
 	transactions := []Transaction{}
-	for _, mt := range monetaTransactions {
-		transactions = append(transactions, AirBankTXConvert(*mt))
+	for _, tx := range airbankTXs {
+		transactions = append(transactions, AirBankTXConvert(*tx))
 	}
 
 	soa := StatementOfAccount{AccountNumber: accountName, Transactions: transactions, Currency: "CZK", StartDate: transactions[len(transactions)-1].AccountingDate, EndDate: transactions[0].AccountingDate}
