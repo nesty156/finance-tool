@@ -1,75 +1,111 @@
 package banks
 
 import (
-	"fmt"
-	"strings"
-	"time"
+	"encoding/csv"
+	"io"
+	"io/ioutil"
+	"os"
 
-	"github.com/dslipak/pdf"
+	"github.com/gocarina/gocsv"
+	"golang.org/x/text/encoding/charmap"
 )
 
-/* Parser airbank statement of account. */
-func ParseAirBankStatement(path string) (StatementOfAccount, error) {
-	layout := "2. 1. 2006"
-	account := StatementOfAccount{}
+type AirBankTransaction struct {
+	AccountingDate USDateTime `csv:"Datum zaúčtování"`
+	Type           string     `csv:"Typ úhrady"`
+	Name           string     `csv:"Název protistrany"`
+	Category       string     `csv:"Kategorie plateb"`
+	AccountNumber  string     `csv:"Číslo účtu protistrany"`
+	Details        string     `csv:"Zpráva pro příjemce"`
+	Amount         Amount     `csv:"Částka v měně účtu"`
+	Fee            float64    `csv:"Poplatek v měně účtu"`
+	Currency       string     `csv:"Měna účtu"`
+}
 
-	r, err := pdf.Open(path)
+func IsUTF8(content []byte) bool {
+	if len(content) >= 3 && content[0] == 0xEF && content[1] == 0xBB && content[2] == 0xBF {
+		return true
+	}
+	return false
+}
+
+func ConvertCP1250ToUTF8(filePath string) error {
+	// Read the file
+	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return account, err
+		return err
 	}
 
-	totalPage := r.NumPage()
-
-	for pageIndex := 1; pageIndex <= totalPage; pageIndex++ {
-		p := r.Page(pageIndex)
-		if p.V.IsNull() {
-			continue
-		}
-
-		rows, _ := p.GetTextByRow()
-		for _, row := range rows {
-			for i, word := range row.Content {
-				wordStr := strings.TrimSpace(word.S)
-				switch wordStr {
-				case "Číslo účtu:":
-					account.AccountNumber = strings.ReplaceAll(row.Content[i+2].S, " ", "")
-
-				case "Období výpisu:":
-					dateStr := row.Content[i+2].S
-					dateParts := strings.Split(dateStr, " - ")
-					if startDate, err := time.Parse(layout, dateParts[0]); err != nil {
-						fmt.Println("Error parsing start date:", err)
-					} else {
-						account.StartDate = startDate
-					}
-
-					if endDate, err := time.Parse(layout, dateParts[1]); err != nil {
-						fmt.Println("Error parsing end date:", err)
-					} else {
-						account.EndDate = endDate
-					}
-
-				case "Měna:":
-					account.Currency = row.Content[i+2].S
-
-				case "Zaúčtování":
-					start, end := 20, 60
-					for j := 0; j < 30; j++ {
-						if i+end > len(row.Content) {
-							end = len(row.Content) - i
-						}
-						transactionRow := pdf.Row{Position: 0, Content: row.Content[i+start : i+end]}
-						if transaction, offset, err := createTransaction(transactionRow); err != nil {
-							break
-						} else {
-							account.Transactions = append(account.Transactions, transaction)
-							start += offset
-							end += offset
-						}
-					}
-				}
-			}
-		}
+	// Check if the file is already UTF-8 encoded
+	if IsUTF8(content) {
+		return nil // No need to convert, already UTF-8
 	}
-	return account, nil
+
+	// Convert CP1250 to UTF-8
+	utf8Content, err := charmap.Windows1250.NewDecoder().Bytes(content)
+	if err != nil {
+		return err
+	}
+
+	// Write the UTF-8 content back to the file
+	err = ioutil.WriteFile(filePath, append([]byte{0xEF, 0xBB, 0xBF}, utf8Content...), 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Create statement of account from AirBank CSV file (transaction history)
+func CreateAirBankStatement(filePath, accountName, currency string) (StatementOfAccount, error) {
+
+	// Convert CP1250 to UTF-8
+	err := ConvertCP1250ToUTF8(filePath)
+	if err != nil {
+		panic(err)
+	}
+
+	csvFile, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+	defer csvFile.Close()
+
+	airbankTXs := []*AirBankTransaction{}
+
+	gocsv.SetCSVReader(func(in io.Reader) gocsv.CSVReader {
+		r := csv.NewReader(in)
+		r.LazyQuotes = true
+		r.Comma = ';' // Use semicolon separator
+		return r      // Allows use quotes in CSV
+	})
+
+	if err := gocsv.UnmarshalFile(csvFile, &airbankTXs); err != nil { // Load clients from file
+		panic(err)
+	}
+
+	// Convert to internal format
+	transactions := []Transaction{}
+	for _, tx := range airbankTXs {
+		transactions = append(transactions, AirBankTXConvert(*tx))
+	}
+
+	soa := StatementOfAccount{AccountNumber: accountName, Transactions: transactions, Currency: currency, StartDate: transactions[len(transactions)-1].AccountingDate, EndDate: transactions[0].AccountingDate}
+
+	return soa, nil
+}
+
+func AirBankTXConvert(tx AirBankTransaction) Transaction {
+	return Transaction{
+		AccountingDate:     tx.AccountingDate.Time,
+		ExecutionDate:      tx.AccountingDate.Time,
+		Type:               tx.Type,
+		Name:               tx.Name,
+		Category:           tx.Category,
+		AccountOrDebitCard: tx.AccountNumber,
+		Details:            tx.Details,
+		Amount:             float64(tx.Amount.float64),
+		Fee:                tx.Fee,
+		Currency:           tx.Currency,
+	}
 }

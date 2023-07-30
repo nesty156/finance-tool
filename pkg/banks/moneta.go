@@ -4,50 +4,25 @@ import (
 	"encoding/csv"
 	"io"
 	"os"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/gocarina/gocsv"
 )
 
-type DateTime struct {
-	time.Time
-}
-
-type CZKAmount struct {
-	float64
-}
-
 type MonetaTransaction struct {
-	AccountingDate DateTime  `csv:"Splatnost"`
-	ExecutionDate  DateTime  `csv:"Odesláno"`
-	Type           string    `csv:"Typ transakce"`
-	Code           string    `csv:"-"`
-	Name           string    `csv:"Název účtu příjemce"`
-	AccountNumber  string    `csv:"Číslo protiúčtu"`
-	AccountBank    string    `csv:"Banka protiúčtu"`
-	Details        string    `csv:"Zpráva pro příjemce"`
-	Amount         CZKAmount `csv:"Částka"`
-	Fee            float64   `csv:"-"`
+	AccountingDate CZDateTime `csv:"Splatnost"`
+	ExecutionDate  CZDateTime `csv:"Odesláno"`
+	Type           string     `csv:"Typ transakce"`
+	Code           string     `csv:"-"`
+	Name           string     `csv:"Název účtu příjemce"`
+	AccountNumber  string     `csv:"Číslo protiúčtu"`
+	AccountBank    string     `csv:"Banka protiúčtu"`
+	Details        string     `csv:"Zpráva pro příjemce"`
+	Amount         Amount     `csv:"Částka"`
+	Fee            float64    `csv:"-"`
 }
 
-// Convert the CSV string as internal date
-func (date *DateTime) UnmarshalCSV(csv string) (err error) {
-	date.Time, err = time.Parse("02.01.2006", csv)
-	return err
-}
-
-// Convert the CSV string to internal float64
-func (f *CZKAmount) UnmarshalCSV(csv string) (err error) {
-	csv = strings.ReplaceAll(csv, " ", "")
-	csv = strings.ReplaceAll(csv, ",", ".")
-	f.float64, err = strconv.ParseFloat(csv, 64)
-	return err
-}
-
-/* Parser moneta statement of account. */
-func ParseMonetaStatement(fileName string, accountName string) (StatementOfAccount, error) {
+// Create statement of account from Moneta CSV file (transaction history)
+func CreateMonetaStatement(fileName string, accountName string) (StatementOfAccount, error) {
 
 	csvFile, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if err != nil {
@@ -71,7 +46,7 @@ func ParseMonetaStatement(fileName string, accountName string) (StatementOfAccou
 	// Convert to internal format
 	transactions := []Transaction{}
 	for _, mt := range monetaTransactions {
-		transactions = append(transactions, ConvertToTransaction(*mt))
+		transactions = append(transactions, MonetaTXConvert(*mt))
 	}
 
 	soa := StatementOfAccount{AccountNumber: accountName, Transactions: transactions, Currency: "CZK", StartDate: transactions[len(transactions)-1].AccountingDate, EndDate: transactions[0].AccountingDate}
@@ -79,7 +54,7 @@ func ParseMonetaStatement(fileName string, accountName string) (StatementOfAccou
 	return soa, nil
 }
 
-func ConvertToTransaction(mt MonetaTransaction) Transaction {
+func MonetaTXConvert(mt MonetaTransaction) Transaction {
 	return Transaction{
 		AccountingDate:     mt.AccountingDate.Time,
 		ExecutionDate:      mt.ExecutionDate.Time,

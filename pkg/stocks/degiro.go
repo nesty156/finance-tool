@@ -27,7 +27,7 @@ func (f *EURAmount) UnmarshalCSV(csv string) (err error) {
 	return err
 }
 
-func ParseDegiroPortfolio(fileName string, portfolioName string) (Portfolio, error) {
+func CreateDegiroPortfolio(fileName string, portfolioName string) (Portfolio, error) {
 	csvFile, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if err != nil {
 		panic(err)
@@ -60,15 +60,4 @@ func ConvertToProduct(degiroProduct DegiroProduct) Product {
 	}
 
 	return product
-}
-
-func PortfolioValue(portfolio Portfolio) float64 {
-	total := 0.0
-
-	// Loop through products and add up the amounts
-	for _, product := range portfolio.Products {
-		total += product.ValueEUR
-	}
-
-	return total
 }
