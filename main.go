@@ -155,12 +155,19 @@ func saveStat(name, component, currency string, value float64) {
 	}
 }
 
-func loadAirBank() {
+func userInput() (filePath, accounName, currency string) {
 	fmt.Print("Enter the path to the file: ")
-	var filePath string
 	fmt.Scanln(&filePath)
+	fmt.Print("Enter the name of the account: ")
+	fmt.Scanln(&accounName)
+	fmt.Print("Enter the currency of the account: ")
+	fmt.Scanln(&currency)
+	return filePath, accounName, currency
+}
 
-	statement, err := banks.CreateAirBankStatement(filePath, "moneta")
+func loadAirBank() {
+	filePath, accounName, currency := userInput()
+	statement, err := banks.CreateAirBankStatement(filePath, accounName, currency)
 	if err != nil {
 		log.Printf("Error creating Airbank statement: %v", err)
 		return

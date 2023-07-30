@@ -11,16 +11,15 @@ import (
 )
 
 type AirBankTransaction struct {
-	AccountingDate DateTime `csv:"Splatnost"`
-	ExecutionDate  DateTime `csv:"Odesláno"`
-	Type           string   `csv:"Typ transakce"`
-	Code           string   `csv:"-"`
-	Name           string   `csv:"Název účtu příjemce"`
-	AccountNumber  string   `csv:"Číslo protiúčtu"`
-	AccountBank    string   `csv:"Banka protiúčtu"`
-	Details        string   `csv:"Zpráva pro příjemce"`
-	Amount         Amount   `csv:"Částka"`
-	Fee            float64  `csv:"-"`
+	AccountingDate USDateTime `csv:"Datum zaúčtování"`
+	Type           string     `csv:"Typ úhrady"`
+	Name           string     `csv:"Název protistrany"`
+	Category       string     `csv:"Kategorie plateb"`
+	AccountNumber  string     `csv:"Číslo účtu protistrany"`
+	Details        string     `csv:"Zpráva pro příjemce"`
+	Amount         Amount     `csv:"Částka v měně účtu"`
+	Fee            float64    `csv:"Poplatek v měně účtu"`
+	Currency       string     `csv:"Měna účtu"`
 }
 
 func IsUTF8(content []byte) bool {
@@ -58,7 +57,7 @@ func ConvertCP1250ToUTF8(filePath string) error {
 }
 
 // Create statement of account from AirBank CSV file (transaction history)
-func CreateAirBankStatement(filePath string, accountName string) (StatementOfAccount, error) {
+func CreateAirBankStatement(filePath, accountName, currency string) (StatementOfAccount, error) {
 
 	// Convert CP1250 to UTF-8
 	err := ConvertCP1250ToUTF8(filePath)
@@ -91,21 +90,22 @@ func CreateAirBankStatement(filePath string, accountName string) (StatementOfAcc
 		transactions = append(transactions, AirBankTXConvert(*tx))
 	}
 
-	soa := StatementOfAccount{AccountNumber: accountName, Transactions: transactions, Currency: "CZK", StartDate: transactions[len(transactions)-1].AccountingDate, EndDate: transactions[0].AccountingDate}
+	soa := StatementOfAccount{AccountNumber: accountName, Transactions: transactions, Currency: currency, StartDate: transactions[len(transactions)-1].AccountingDate, EndDate: transactions[0].AccountingDate}
 
 	return soa, nil
 }
 
-func AirBankTXConvert(mt AirBankTransaction) Transaction {
+func AirBankTXConvert(tx AirBankTransaction) Transaction {
 	return Transaction{
-		AccountingDate:     mt.AccountingDate.Time,
-		ExecutionDate:      mt.ExecutionDate.Time,
-		Type:               mt.Type,
-		Code:               mt.Code,
-		Name:               mt.Name,
-		AccountOrDebitCard: mt.AccountNumber + "/" + mt.AccountBank,
-		Details:            mt.Details,
-		Amount:             float64(mt.Amount.float64),
-		Fee:                mt.Fee,
+		AccountingDate:     tx.AccountingDate.Time,
+		ExecutionDate:      tx.AccountingDate.Time,
+		Type:               tx.Type,
+		Name:               tx.Name,
+		Category:           tx.Category,
+		AccountOrDebitCard: tx.AccountNumber,
+		Details:            tx.Details,
+		Amount:             float64(tx.Amount.float64),
+		Fee:                tx.Fee,
+		Currency:           tx.Currency,
 	}
 }

@@ -9,16 +9,16 @@ import (
 )
 
 type MonetaTransaction struct {
-	AccountingDate DateTime `csv:"Splatnost"`
-	ExecutionDate  DateTime `csv:"Odesláno"`
-	Type           string   `csv:"Typ transakce"`
-	Code           string   `csv:"-"`
-	Name           string   `csv:"Název účtu příjemce"`
-	AccountNumber  string   `csv:"Číslo protiúčtu"`
-	AccountBank    string   `csv:"Banka protiúčtu"`
-	Details        string   `csv:"Zpráva pro příjemce"`
-	Amount         Amount   `csv:"Částka"`
-	Fee            float64  `csv:"-"`
+	AccountingDate CZDateTime `csv:"Splatnost"`
+	ExecutionDate  CZDateTime `csv:"Odesláno"`
+	Type           string     `csv:"Typ transakce"`
+	Code           string     `csv:"-"`
+	Name           string     `csv:"Název účtu příjemce"`
+	AccountNumber  string     `csv:"Číslo protiúčtu"`
+	AccountBank    string     `csv:"Banka protiúčtu"`
+	Details        string     `csv:"Zpráva pro příjemce"`
+	Amount         Amount     `csv:"Částka"`
+	Fee            float64    `csv:"-"`
 }
 
 // Create statement of account from Moneta CSV file (transaction history)

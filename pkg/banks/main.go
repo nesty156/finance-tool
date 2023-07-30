@@ -22,14 +22,20 @@ type Transaction struct {
 	ExecutionDate      time.Time
 	Type               string
 	Code               string
+	Category           string
 	Name               string
 	AccountOrDebitCard string
 	Details            string
+	Currency           string
 	Amount             float64
 	Fee                float64
 }
 
-type DateTime struct {
+type CZDateTime struct {
+	time.Time
+}
+
+type USDateTime struct {
 	time.Time
 }
 
@@ -38,8 +44,20 @@ type Amount struct {
 }
 
 // Convert the CSV string as internal date
-func (date *DateTime) UnmarshalCSV(csv string) (err error) {
+func (date *CZDateTime) UnmarshalCSV(csv string) (err error) {
+	if csv == "" {
+		return nil
+	}
 	date.Time, err = time.Parse("02.01.2006", csv)
+	return err
+}
+
+// Convert the CSV string as internal date
+func (date *USDateTime) UnmarshalCSV(csv string) (err error) {
+	if csv == "" {
+		return nil
+	}
+	date.Time, err = time.Parse("02/01/2006", csv)
 	return err
 }
 
