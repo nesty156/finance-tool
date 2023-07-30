@@ -11,15 +11,15 @@ import (
 )
 
 type AirBankTransaction struct {
-	AccountingDate USDateTime `csv:"Datum zaúčtování"`
-	Type           string     `csv:"Typ úhrady"`
-	Name           string     `csv:"Název protistrany"`
-	Category       string     `csv:"Kategorie plateb"`
-	AccountNumber  string     `csv:"Číslo účtu protistrany"`
-	Details        string     `csv:"Zpráva pro příjemce"`
-	Amount         Amount     `csv:"Částka v měně účtu"`
-	Fee            float64    `csv:"Poplatek v měně účtu"`
-	Currency       string     `csv:"Měna účtu"`
+	ExecutionDate USDateTime `csv:"Datum provedení"`
+	Type          string     `csv:"Typ úhrady"`
+	Name          string     `csv:"Název protistrany"`
+	Category      string     `csv:"Kategorie plateb"`
+	AccountNumber string     `csv:"Číslo účtu protistrany"`
+	Details       string     `csv:"Zpráva pro příjemce"`
+	Amount        Amount     `csv:"Částka v měně účtu"`
+	Fee           float64    `csv:"Poplatek v měně účtu"`
+	Currency      string     `csv:"Měna účtu"`
 }
 
 func IsUTF8(content []byte) bool {
@@ -97,8 +97,8 @@ func CreateAirBankStatement(filePath, accountName, currency string) (StatementOf
 
 func AirBankTXConvert(tx AirBankTransaction) Transaction {
 	return Transaction{
-		AccountingDate:     tx.AccountingDate.Time,
-		ExecutionDate:      tx.AccountingDate.Time,
+		AccountingDate:     tx.ExecutionDate.Time,
+		ExecutionDate:      tx.ExecutionDate.Time,
 		Type:               tx.Type,
 		Name:               tx.Name,
 		Category:           tx.Category,
