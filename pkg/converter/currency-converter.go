@@ -1,11 +1,12 @@
 package converter
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type CoinbaseResponse struct {
@@ -27,6 +28,9 @@ type ConvertRatesEUR struct {
 }
 
 func GetBitcoinPrice(currency string) (float64, error) {
+	if currency == "BTC" {
+		return 1, nil
+	}
 	url := fmt.Sprintf("https://api.coinbase.com/v2/prices/BTC-%s/spot", currency)
 	res, err := http.Get(url)
 	if err != nil {
@@ -34,13 +38,19 @@ func GetBitcoinPrice(currency string) (float64, error) {
 	}
 	defer res.Body.Close()
 
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
+	var bodyBuilder strings.Builder
+	scanner := bufio.NewScanner(res.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+		bodyBuilder.WriteString(line)
+	}
+
+	if err := scanner.Err(); err != nil {
 		return 0, err
 	}
 
 	var cr CoinbaseResponse
-	err = json.Unmarshal(body, &cr)
+	err = json.Unmarshal([]byte(bodyBuilder.String()), &cr)
 	if err != nil {
 		return 0, err
 	}
@@ -50,16 +60,8 @@ func GetBitcoinPrice(currency string) (float64, error) {
 	return 0, err
 }
 
-func GetConvertRatesCZK() ConvertRatesCZK {
-	btcCZK, _ := GetBitcoinPrice("CZK")
-	btcEUR, _ := GetBitcoinPrice("EUR")
-	btcUSD, _ := GetBitcoinPrice("USD")
-	return ConvertRatesCZK{BTC: btcCZK, EUR: btcCZK / btcEUR, USD: btcCZK / btcUSD}
-}
-
-func GetConvertRatesEUR() ConvertRatesEUR {
-	btcEUR, _ := GetBitcoinPrice("EUR")
-	btcUSD, _ := GetBitcoinPrice("USD")
-	btcCZK, _ := GetBitcoinPrice("CZK")
-	return ConvertRatesEUR{BTC: btcEUR, USD: btcEUR / btcUSD, CZK: btcEUR / btcCZK}
+func GetConvertRate(fromCurrency, toCurrency string) float64 {
+	from, _ := GetBitcoinPrice(fromCurrency)
+	to, _ := GetBitcoinPrice(toCurrency)
+	return to / from
 }

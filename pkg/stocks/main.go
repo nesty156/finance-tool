@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -79,26 +80,22 @@ func ScrapePriceWithISIN(isin string) (float64, string, error) {
 func PortfolioValue(portfolio Portfolio) float64 {
 	total := 0.0
 
+	var wg sync.WaitGroup
+	var mu sync.Mutex
 	// Loop through products and add up the amounts
 	for _, product := range portfolio.Products {
-		shareValue, currency, _ := ScrapePriceWithISIN(product.SymbolISIN)
-		if currency != portfolio.Currency && portfolio.Currency == "EUR" {
-			convertRate := converter.GetConvertRatesEUR()
-			if currency == "USD" {
-				shareValue = shareValue * convertRate.USD
-			} else if currency == "CZK" {
-				shareValue = shareValue * convertRate.CZK
+		wg.Add(1)
+		go func(product Product) {
+			shareValue, currency, _ := ScrapePriceWithISIN(product.SymbolISIN)
+			if currency != portfolio.Currency {
+				convertRate := converter.GetConvertRate(currency, portfolio.Currency)
+				shareValue *= convertRate
 			}
-		} else if currency != portfolio.Currency && portfolio.Currency == "CZK" {
-			convertRate := converter.GetConvertRatesCZK()
-			if currency == "USD" {
-				shareValue = shareValue * convertRate.USD
-			} else if currency == "EUR" {
-				shareValue = shareValue * convertRate.EUR
-			}
-		}
-		product.Value = shareValue * product.Quantity
-		total += product.Value
+			value := shareValue * product.Quantity
+			mu.Lock()
+			total += value
+			mu.Unlock()
+		}(product)
 	}
 
 	return total
