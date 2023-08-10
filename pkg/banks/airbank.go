@@ -3,7 +3,6 @@ package banks
 import (
 	"encoding/csv"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/gocarina/gocsv"
@@ -31,7 +30,7 @@ func IsUTF8(content []byte) bool {
 
 func ConvertCP1250ToUTF8(filePath string) error {
 	// Read the file
-	content, err := ioutil.ReadFile(filePath)
+	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return err
 	}
@@ -48,7 +47,7 @@ func ConvertCP1250ToUTF8(filePath string) error {
 	}
 
 	// Write the UTF-8 content back to the file
-	err = ioutil.WriteFile(filePath, append([]byte{0xEF, 0xBB, 0xBF}, utf8Content...), 0644)
+	err = os.WriteFile(filePath, append([]byte{0xEF, 0xBB, 0xBF}, utf8Content...), 0644)
 	if err != nil {
 		return err
 	}
