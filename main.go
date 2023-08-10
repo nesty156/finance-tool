@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -79,10 +78,13 @@ func main() {
 						log.Printf("Error loading user stats: %v", err)
 						return
 					}
-					ratesCZK := converter.GetConvertRatesCZK()
-					account.GetStatsInfo(user.ConvertRatesCZK{BTC: ratesCZK.BTC, EUR: ratesCZK.EUR, USD: ratesCZK.USD})
+					ratesCZK := user.ConvertRatesCZK{
+						BTC: converter.GetConvertRate("BTC", "CZK"),
+						EUR: converter.GetConvertRate("EUR", "CZK"),
+						USD: converter.GetConvertRate("USD", "CZK"),
+					}
+					account.GetStatsInfo(ratesCZK)
 				}
-
 			} else {
 				user.Logout()
 				logged = false
@@ -222,7 +224,7 @@ func loadCeskaSporitelna() {
 	var filePath string
 	fmt.Scanln(&filePath)
 
-	jsonData, err := ioutil.ReadFile(filePath)
+	jsonData, err := os.ReadFile(filePath)
 	if err != nil {
 		log.Printf("Error reading file: %v", err)
 		return

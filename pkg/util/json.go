@@ -3,7 +3,7 @@ package util
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/nesty156/finance-tool/pkg/banks"
@@ -21,7 +21,7 @@ func SaveUserStatsJson(user user.AppAccount) {
 	name := strings.ReplaceAll(user.Name+".json", "/", "-")
 
 	// write the JSON byte slice to a file
-	err = ioutil.WriteFile(name, jsonData, 0644)
+	err = os.WriteFile(name, jsonData, 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -31,7 +31,7 @@ func SaveUserStatsJson(user user.AppAccount) {
 
 func LoadUserStatsJson(filepath string) (user.AppAccount, error) {
 	// read the JSON file into a byte slice
-	jsonData, err := ioutil.ReadFile(filepath)
+	jsonData, err := os.ReadFile(filepath)
 	if err != nil {
 		return user.AppAccount{}, err
 	}
@@ -59,7 +59,7 @@ func SaveSoaJson(soa banks.StatementOfAccount) {
 	name := strings.ReplaceAll(soa.AccountNumber+".json", "/", "-")
 
 	// write the JSON byte slice to a file
-	err = ioutil.WriteFile(name, jsonData, 0644)
+	err = os.WriteFile(name, jsonData, 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -69,7 +69,7 @@ func SaveSoaJson(soa banks.StatementOfAccount) {
 
 func LoadSoaJson(filename string) (*banks.StatementOfAccount, error) {
 	// read the JSON file into a byte slice
-	jsonData, err := ioutil.ReadFile(filename)
+	jsonData, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func SavePortfolioJson(portfolio stocks.Portfolio) {
 	name := strings.ReplaceAll(portfolio.Name+".json", "/", "-")
 
 	// write the JSON byte slice to a file
-	err = ioutil.WriteFile(name, jsonData, 0644)
+	err = os.WriteFile(name, jsonData, 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -107,7 +107,7 @@ func SavePortfolioJson(portfolio stocks.Portfolio) {
 
 func LoadPortfolioJson(filename string) (*stocks.Portfolio, error) {
 	// read the JSON file into a byte slice
-	jsonData, err := ioutil.ReadFile(filename)
+	jsonData, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}

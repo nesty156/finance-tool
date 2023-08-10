@@ -3,8 +3,8 @@ package bitcoin
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -50,7 +50,7 @@ type TrezorStat struct {
 
 // Convert Trezor files to Statement of Account format
 func ConvertTrezorToStatement(dirPath string) ([]TrezorStat, error) {
-	files, err := ioutil.ReadDir(dirPath)
+	files, err := os.ReadDir(dirPath)
 	if err != nil {
 		return nil, fmt.Errorf("error reading directory: %v", err)
 	}
@@ -93,7 +93,7 @@ func ConvertTrezorToStatement(dirPath string) ([]TrezorStat, error) {
 
 func ParseBtcAccount(filepath string) (*BtcAccount, error) {
 	// read the JSON file into a byte slice
-	jsonData, err := ioutil.ReadFile(filepath)
+	jsonData, err := os.ReadFile(filepath)
 	if err != nil {
 		return nil, err
 	}
